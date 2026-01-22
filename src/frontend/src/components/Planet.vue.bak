@@ -1,0 +1,290 @@
+<template>
+  <div class="planet-container">
+    <canvas ref="planetCanvas" class="planet-canvas"></canvas>
+    <div class="zoom-controls">
+      <button @click="zoomIn" class="zoom-button">+</button>
+      <button @click="zoomOut" class="zoom-button">-</button>
+    </div>
+  </div>
+</template>
+
+<script>
+import * as THREE from 'three'
+import { markRaw } from 'vue'
+
+export default {
+  name: 'PlanetView',
+  data() {
+    return {
+      scene: null,
+      camera: null,
+      renderer: null,
+      planet: null,
+      controls: null,
+      zoomLevel: 1,
+      maxZoom: 5,
+      minZoom: 0.5,
+      isUnfolding: false,
+      isUnfolded: false,
+      unfoldProgress: 0,
+      targetUnfoldProgress: 0,
+      originalGeometry: null
+    }
+  },
+  mounted() {
+    this.initThreeJS()
+    this.animate()
+  },
+  beforeUnmount() {
+    this.cleanup()
+  },
+  methods: {
+    zoomIn() {
+      if (this.zoomLevel < this.maxZoom) {
+        this.zoomLevel += 0.1
+
+        // Если достигли максимального зума, начинаем разворачивание
+        if (this.zoomLevel >= this.maxZoom - 0.1 && !this.isUnfolded) {
+          this.startUnfolding()
+        }
+
+        this.updateCamera()
+      }
+    },
+
+    startUnfolding() {
+      this.isUnfolding = true
+      this.targetUnfoldProgress = 1
+      this.animateUnfolding()
+    },
+
+    animateUnfolding() {
+      if (!this.isUnfolding) return
+
+      // Плавно изменяем прогресс разворачивания
+      const delta = (this.targetUnfoldProgress - this.unfoldProgress) * 0.1
+
+      if (Math.abs(delta) > 0.001) {
+        this.unfoldProgress += delta
+
+        // Применяем трансформацию к планете
+        this.updatePlanetGeometry()
+
+        requestAnimationFrame(this.animateUnfolding)
+      } else {
+        this.unfoldProgress = this.targetUnfoldProgress
+        this.isUnfolded = this.unfoldProgress >= 1
+        this.isUnfolding = false
+
+        // Применяем окончательную трансформацию
+        this.updatePlanetGeometry()
+      }
+    },
+
+    updatePlanetGeometry() {
+      // При разворачивании мы будем деформировать сферу в плоскую карту
+      // Это упрощенная реализация - в реальности нужно будет создать новую геометрию
+
+      // Сохраняем оригинальную геометрию
+      if (!this.originalGeometry) {
+        this.originalGeometry = this.planet.geometry.clone()
+      }
+
+      // Временная реализация: просто масштабируем планету по оси Z
+      // В реальности нужно будет использовать более сложную деформацию
+      const scale = 1 - this.unfoldProgress * 0.9 // Сжимаем по Z
+      const scaleXZ = 1 + this.unfoldProgress * 2 // Растягиваем по X и Z
+
+      this.planet.scale.set(scaleXZ, 1, scale)
+
+      // Поворачиваем планету, чтобы она была видна сверху при полном разворачивании
+      this.planet.rotation.x = this.unfoldProgress * Math.PI / 2
+    },
+
+    zoomOut() {
+      if (this.zoomLevel > this.minZoom) {
+        this.zoomLevel -= 0.1
+
+        // Если уменьшаем зум при развернутой карте, начинаем сворачивание
+        if (this.isUnfolded) {
+          this.startFolding()
+        }
+
+        this.updateCamera()
+      }
+    },
+
+    startFolding() {
+      this.isUnfolding = true
+      this.targetUnfoldProgress = 0
+      this.animateUnfolding()
+    },
+    
+    updateCamera() {
+      // Плавно изменяем положение камеры
+      const targetZ = 5 / this.zoomLevel
+      
+      // Анимируем изменение положения камеры
+      this.animateCameraZoom(targetZ)
+    },
+    
+    animateCameraZoom(targetZ) {
+      const currentZ = this.camera.position.z
+      const delta = (targetZ - currentZ) * 0.1 // Скорость анимации
+      
+      // Создаем анимацию изменения положения камеры
+      const animateZoom = () => {
+        if (Math.abs(this.camera.position.z - targetZ) > 0.01) {
+          this.camera.position.z += delta
+          requestAnimationFrame(animateZoom)
+        } else {
+          this.camera.position.z = targetZ
+        }
+      }
+      
+      animateZoom()
+    },
+    
+    initThreeJS() {
+      // Создаем сцену
+      this.scene = markRaw(new THREE.Scene())
+
+      // Создаем камеру
+      this.camera = markRaw(new THREE.PerspectiveCamera(
+        75,
+        window.innerWidth / window.innerHeight,
+        0.1,
+        1000
+      ))
+      this.camera.position.z = 5 / this.zoomLevel
+
+      // Создаем рендерер
+      this.renderer = markRaw(new THREE.WebGLRenderer({
+        canvas: this.$refs.planetCanvas,
+        antialias: true
+      }))
+      this.renderer.setSize(window.innerWidth, window.innerHeight)
+      this.renderer.setPixelRatio(window.devicePixelRatio)
+
+      // Добавляем освещение
+      const ambientLight = new THREE.AmbientLight(0x404040)
+      this.scene.add(ambientLight)
+
+      const directionalLight = new THREE.DirectionalLight(0xffffff, 1)
+      directionalLight.position.set(5, 3, 5)
+      this.scene.add(directionalLight)
+
+      // Создаем текстуру Земли
+      const textureLoader = new THREE.TextureLoader()
+      const earthTexture = textureLoader.load('https://threejs.org/examples/textures/planets/earth_atmos_2048.jpg')
+      const bumpMap = textureLoader.load('https://threejs.org/examples/textures/planets/earth_normal_2048.jpg')
+      const specularMap = textureLoader.load('https://threejs.org/examples/textures/planets/earth_specular_2048.jpg')
+
+      // Создаем сферу для планеты
+      const geometry = new THREE.SphereGeometry(2, 64, 64)
+      const material = new THREE.MeshPhongMaterial({
+        map: earthTexture,
+        bumpMap: bumpMap,
+        bumpScale: 0.05,
+        specularMap: specularMap,
+        specular: new THREE.Color('grey')
+      })
+      this.planet = markRaw(new THREE.Mesh(geometry, material))
+      this.scene.add(this.planet)
+
+      // Добавляем облака
+      const cloudTexture = textureLoader.load('https://threejs.org/examples/textures/planets/earth_clouds_2048.jpg')
+      const cloudMaterial = new THREE.MeshPhongMaterial({
+        map: cloudTexture,
+        transparent: true,
+        opacity: 0.8
+      })
+      const cloudGeometry = new THREE.SphereGeometry(2.03, 64, 64)
+      const clouds = markRaw(new THREE.Mesh(cloudGeometry, cloudMaterial))
+      this.scene.add(clouds)
+
+      // Добавляем звездное небо
+      const starGeometry = new THREE.SphereGeometry(90, 64, 64)
+      const starTexture = textureLoader.load('https://threejs.org/examples/textures/sprites/spark1.png')
+      const starMaterial = new THREE.MeshBasicMaterial({
+        map: starTexture,
+        side: THREE.BackSide
+      })
+      const starField = markRaw(new THREE.Mesh(starGeometry, starMaterial))
+      this.scene.add(starField)
+
+      // Обработка изменения размера окна
+      window.addEventListener('resize', this.onWindowResize)
+    },
+    animate() {
+      requestAnimationFrame(this.animate)
+
+      // Вращение планеты (замедляем при увеличении)
+      if (this.planet) {
+        this.planet.rotation.y += 0.002 / this.zoomLevel
+      }
+
+      this.renderer.render(this.scene, this.camera)
+    },
+    onWindowResize() {
+      this.camera.aspect = window.innerWidth / window.innerHeight
+      this.camera.updateProjectionMatrix()
+      this.renderer.setSize(window.innerWidth, window.innerHeight)
+    },
+    cleanup() {
+      window.removeEventListener('resize', this.onWindowResize)
+      
+      // Очистка ресурсов Three.js
+      if (this.renderer) {
+        this.renderer.dispose()
+      }
+      
+      if (this.scene) {
+        this.scene.clear()
+      }
+    }
+  }
+}
+</script>
+
+<style scoped>
+.planet-container {
+  width: 100%;
+  height: 100vh;
+  overflow: hidden;
+  position: relative;
+}
+
+.planet-canvas {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.zoom-controls {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  z-index: 10;
+}
+
+.zoom-button {
+  width: 40px;
+  height: 40px;
+  border: none;
+  background-color: rgba(0, 0, 0, 0.7);
+  color: white;
+  font-size: 20px;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.zoom-button:hover {
+  background-color: rgba(0, 0, 0, 0.9);
+  transform: scale(1.1);
+}
+</style>
