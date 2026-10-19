@@ -56,6 +56,16 @@ docs/
 5. **QA** — Jest (или node test) на `match_engine.js`, сценарии из GAME_CONCEPT.
 6. **Lead** — ADR shared package + скелет `backend/` когда дойдёте до Фазы 4.
 
+## Запуск тестов (game_logic)
+
+Из корня репозитория, без отдельного test-runner:
+
+```bash
+node --test game_logic/match_engine.test.js
+```
+
+Все тесты в каталоге логики: `node --test game_logic`. Раннер — встроенный `node:test` (Node 20+). Jest и корневой `package.json` не требуются.
+
 ## Связь с Cursor
 
 - Rules: `.cursor/rules/*.mdc`

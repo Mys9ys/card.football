@@ -1,355 +1,480 @@
-// Экран профиля игрока
+// Экран профиля игрока: коллекция и счётчики из PackService.
 
-import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, Alert, ActivityIndicator } from 'react-native';
+import React, { useCallback, useRef, useState } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  TouchableOpacity,
+  Alert,
+  ActivityIndicator,
+  RefreshControl,
+} from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
+import { Ionicons } from '@expo/vector-icons';
 import { PackService } from '../services/PackService';
-import PlayerProfile from '../components/PlayerProfile';
 
-const ProfileScreen = () => {
-  const [playerStats, setPlayerStats] = useState(null);
-  const [collectionStats, setCollectionStats] = useState(null);
-  const [recentActivity, setRecentActivity] = useState([]);
-  const [loading, setLoading] = useState(true);
+const RARITY_LABELS = {
+  common: 'Обычные',
+  rare: 'Редкие',
+  epic: 'Эпические',
+  legendary: 'Легендарные',
+};
+
+const RARITY_COLORS = {
+  common: '#CCCCCC',
+  rare: '#1E90FF',
+  epic: '#8A2BE2',
+  legendary: '#FFD700',
+};
+
+const POSITION_LABELS = {
+  attacker: 'Нападающие',
+  midfielder: 'Полузащитники',
+  defender: 'Защитники',
+  goalkeeper: 'Вратари',
+};
+
+const CARD_POSITION_LABELS = {
+  attacker: 'Нападающий',
+  midfielder: 'Полузащитник',
+  defender: 'Защитник',
+  goalkeeper: 'Вратарь',
+};
+
+function unwrap(result, fallbackMessage) {
+  if (!result || result.success === false) {
+    throw new Error(result?.error || fallbackMessage);
+  }
+  return result;
+}
+
+function formatTimestamp(iso) {
+  if (!iso) {
+    return '';
+  }
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) {
+    return '';
+  }
+  return date.toLocaleString('ru-RU');
+}
+
+function clampPercent(value) {
+  const number = Number(value);
+  if (!Number.isFinite(number)) {
+    return 0;
+  }
+  return Math.min(100, Math.max(0, number));
+}
+
+function buildActivity(collection) {
+  if (!collection) {
+    return [];
+  }
+
+  const timestamp = collection.lastUpdated;
+  const items = [];
+
+  if (collection.cardsObtained > 0) {
+    items.push({
+      id: 'cards-obtained',
+      type: 'pack',
+      title: 'Карты из пакетов',
+      description: `Получено карт: ${collection.cardsObtained}. Уникальных в коллекции: ${collection.cards?.length || 0}`,
+      timestamp,
+    });
+  }
+
+  if (collection.duplicateCards > 0) {
+    items.push({
+      id: 'duplicates',
+      type: 'collection',
+      title: 'Дубликаты',
+      description: `Дубликатов обменяно на монеты: ${collection.duplicateCards}`,
+      timestamp,
+    });
+  }
+
+  if (collection.cardUpgrades > 0) {
+    items.push({
+      id: 'upgrades',
+      type: 'achievement',
+      title: 'Улучшения',
+      description: `Улучшений карт: ${collection.cardUpgrades}`,
+      timestamp,
+    });
+  }
+
+  return items;
+}
+
+function loadProfile() {
+  const collectionResult = unwrap(
+    PackService.getPlayerCollection(),
+    'Не удалось загрузить коллекцию'
+  );
+  const completion = unwrap(
+    PackService.getCollectionCompletion(),
+    'Не удалось посчитать заполнение коллекции'
+  );
+  const rarity = unwrap(
+    PackService.getCollectionStatsByRarity(),
+    'Не удалось посчитать карты по редкости'
+  );
+  const position = unwrap(
+    PackService.getCollectionStatsByPosition(),
+    'Не удалось посчитать карты по позициям'
+  );
+  const currency = unwrap(
+    PackService.getPlayerCurrency(),
+    'Не удалось загрузить монеты'
+  );
+  const recommendations = unwrap(
+    PackService.getCollectionRecommendations(),
+    'Не удалось загрузить рекомендации'
+  );
+
+  const collection = collectionResult.collection;
+
+  return {
+    currency: currency.currency ?? 0,
+    collection,
+    completion,
+    rarity: rarity.stats || {},
+    position: position.stats || {},
+    recommendations: Array.isArray(recommendations.recommendations)
+      ? recommendations.recommendations
+      : [],
+    missingTotal: recommendations.missingTotal ?? 0,
+    activity: buildActivity(collection),
+  };
+}
+
+const ProfileScreen = ({ navigation }) => {
+  const [status, setStatus] = useState('loading');
+  const [errorMessage, setErrorMessage] = useState('');
+  const [refreshing, setRefreshing] = useState(false);
+  const [profile, setProfile] = useState(null);
   const [selectedTab, setSelectedTab] = useState('stats');
+  const hasLoaded = useRef(false);
 
-  useEffect(() => {
-    loadProfileData();
+  const loadProfileData = useCallback(async ({ silent } = {}) => {
+    if (silent) {
+      setRefreshing(true);
+    } else {
+      setStatus('loading');
+    }
+
+    try {
+      const nextProfile = loadProfile();
+      setProfile(nextProfile);
+      setErrorMessage('');
+      setStatus('ready');
+      hasLoaded.current = true;
+    } catch (error) {
+      setErrorMessage(error?.message || 'Не удалось загрузить профиль');
+      setStatus('error');
+    } finally {
+      setRefreshing(false);
+    }
   }, []);
 
-  const loadProfileData = async () => {
-    try {
-      setLoading(true);
-      
-      // Получение данных из сервиса
-      const collectionResult = PackService.getPlayerCollection();
-      const completionResult = PackService.getCollectionCompletion();
-      const statsByRarityResult = PackService.getCollectionStatsByRarity();
-      const statsByPositionResult = PackService.getCollectionStatsByPosition();
-      const currencyResult = PackService.getPlayerCurrency();
-      const recommendationsResult = PackService.getCollectionRecommendations();
-      
-      // Генерация статистики игрока
-      const stats = {
-        level: 15,
-        experience: 2340,
-        nextLevel: 3000,
-        achievements: 12,
-        tournamentsPlayed: 8,
-        matchesWon: 23,
-        matchesLost: 12,
-        matchesDraw: 5,
-        totalGoals: 45,
-        totalAssists: 32,
-        winRate: 64.3,
-        rating: 8.7
-      };
-      
-      setPlayerStats(stats);
-      setCollectionStats({
-        completion: completionResult,
-        statsByRarity: statsByRarityResult,
-        statsByPosition: statsByPositionResult,
-        playerCurrency: currencyResult,
-        recommendations: recommendationsResult
-      });
-      
-      // Генерация последней активности
-      const activity = [
-        { id: '1', type: 'match', title: 'Победа в матче', description: 'Победа над Командой B со счетом 3:1', timestamp: new Date(Date.now() - 3600000).toISOString() },
-        { id: '2', type: 'pack', title: 'Открытие пакета', description: 'Открыт пакет "Золотые легенды"', timestamp: new Date(Date.now() - 7200000).toISOString() },
-        { id: '3', type: 'achievement', title: 'Новое достижение', description: 'Получено достижение "Начинающий коллекционер"', timestamp: new Date(Date.now() - 86400000).toISOString() },
-        { id: '4', type: 'tournament', title: 'Регистрация на турнир', description: 'Запись на турнир "Кубок Новичков"', timestamp: new Date(Date.now() - 172800000).toISOString() },
-        { id: '5', type: 'match', title: 'Поражение в матче', description: 'Поражение от Команды C со счетом 1:2', timestamp: new Date(Date.now() - 259200000).toISOString() }
-      ];
-      
-      setRecentActivity(activity);
-      
-    } catch (error) {
-      Alert.alert('Ошибка', 'Не удалось загрузить профиль');
-      console.error(error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Обработка нажатия на элемент активности
-  const handleActivityPress = (activity) => {
-    Alert.alert(activity.title, activity.description, [{ text: 'OK' }]);
-  };
-
-  // Рендер статистики
-  const renderStats = () => (
-    <View style={styles.statsContainer}>
-      {/* Основная статистика */}
-      <View style={styles.mainStatsContainer}>
-        <View style={styles.statItem}>
-          <Text style={styles.statLabel}>Уровень</Text>
-          <Text style={styles.statValue}>{playerStats.level}</Text>
-        </View>
-        <View style={styles.statItem}>
-          <Text style={styles.statLabel}>Опыт</Text>
-          <Text style={styles.statValue}>{playerStats.experience}/{playerStats.nextLevel}</Text>
-        </View>
-        <View style={styles.statItem}>
-          <Text style={styles.statLabel}>Рейтинг</Text>
-          <Text style={styles.statValue}>{playerStats.rating}</Text>
-        </View>
-      </View>
-      
-      {/* Прогресс опыта */}
-      <View style={styles.progressContainer}>
-        <View style={styles.progressBar}>
-          <View 
-            style={[
-              styles.progressFill, 
-              { width: `${(playerStats.experience / playerStats.nextLevel) * 100}%` }
-            ]} 
-          />
-        </View>
-        <Text style={styles.progressText}>До следующего уровня: {playerStats.nextLevel - playerStats.experience} опыта</Text>
-      </View>
-      
-      {/* Дополнительная статистика */}
-      <View style={styles.additionalStatsContainer}>
-        <View style={styles.row}>
-          <View style={styles.statItem}>
-            <Text style={styles.statLabel}>Побед</Text>
-            <Text style={styles.statValue}>{playerStats.matchesWon}</Text>
-          </View>
-          <View style={styles.statItem}>
-            <Text style={styles.statLabel}>Поражений</Text>
-            <Text style={styles.statValue}>{playerStats.matchesLost}</Text>
-          </View>
-          <View style={styles.statItem}>
-            <Text style={styles.statLabel}>Ничьих</Text>
-            <Text style={styles.statValue}>{playerStats.matchesDraw}</Text>
-          </View>
-        </View>
-        
-        <View style={styles.row}>
-          <View style={styles.statItem}>
-            <Text style={styles.statLabel}>Голов</Text>
-            <Text style={styles.statValue}>{playerStats.totalGoals}</Text>
-          </View>
-          <View style={styles.statItem}>
-            <Text style={styles.statLabel}>Пасов</Text>
-            <Text style={styles.statValue}>{playerStats.totalAssists}</Text>
-          </View>
-          <View style={styles.statItem}>
-            <Text style={styles.statLabel}>Турниров</Text>
-            <Text style={styles.statValue}>{playerStats.tournamentsPlayed}</Text>
-          </View>
-        </View>
-        
-        <View style={styles.row}>
-          <View style={styles.statItem}>
-            <Text style={styles.statLabel}>Побед %</Text>
-            <Text style={styles.statValue}>{playerStats.winRate}%</Text>
-          </View>
-          <View style={styles.statItem}>
-            <Text style={styles.statLabel}>Достижений</Text>
-            <Text style={styles.statValue}>{playerStats.achievements}</Text>
-          </View>
-        </View>
-      </View>
-    </View>
+  useFocusEffect(
+    useCallback(() => {
+      loadProfileData({ silent: hasLoaded.current });
+    }, [loadProfileData])
   );
 
-  // Рендер коллекции
-  const renderCollection = () => (
-    <View style={styles.collectionContainer}>
-      {/* Статистика коллекции */}
-      {collectionStats && (
-        <View style={styles.collectionStatsContainer}>
-          <View style={styles.row}>
-            <View style={styles.statItem}>
-              <Text style={styles.statLabel}>Карт в коллекции</Text>
-              <Text style={styles.statValue}>{collectionStats.completion.collectedCards}</Text>
-            </View>
-            <View style={styles.statItem}>
-              <Text style={styles.statLabel}>Всего карт</Text>
-              <Text style={styles.statValue}>{collectionStats.completion.totalCards}</Text>
-            </View>
-          </View>
-          
-          <View style={styles.progressContainer}>
-            <Text style={styles.progressLabel}>Заполнение коллекции</Text>
-            <View style={styles.progressBar}>
-              <View 
-                style={[
-                  styles.progressFill, 
-                  { width: `${collectionStats.completion.completionPercentage}%` }
-                ]} 
-              />
-            </View>
-            <Text style={styles.progressText}>{collectionStats.completion.completionPercentage}%</Text>
-          </View>
-          
-          {/* Статистика по редкости */}
-          <View style={styles.statsByRarityContainer}>
-            <Text style={styles.sectionTitle}>По редкости:</Text>
-            <View style={styles.row}>
-              {Object.entries(collectionStats.statsByRarity.stats).map(([rarity, count]) => (
-                <View key={rarity} style={styles.rarityItem}>
-                  <Text style={styles.rarityLabel}>
-                    {rarity === 'common' ? 'Обычные' :
-                     rarity === 'rare' ? 'Редкие' :
-                     rarity === 'epic' ? 'Эпические' : 'Легендарные'}
-                  </Text>
-                  <Text style={styles.rarityCount}>{count}</Text>
-                </View>
-              ))}
-            </View>
-          </View>
-          
-          {/* Статистика по позициям */}
-          <View style={styles.statsByPositionContainer}>
-            <Text style={styles.sectionTitle}>По позициям:</Text>
-            <View style={styles.row}>
-              {Object.entries(collectionStats.statsByPosition.stats).map(([position, count]) => (
-                <View key={position} style={styles.positionItem}>
-                  <Text style={styles.positionLabel}>
-                    {position === 'attacker' ? 'Нападающие' :
-                     position === 'midfielder' ? 'Полузащитники' :
-                     position === 'defender' ? 'Защитники' : 'Вратари'}
-                  </Text>
-                  <Text style={styles.positionCount}>{count}</Text>
-                </View>
-              ))}
-            </View>
-          </View>
-        </View>
-      )}
-      
-      {/* Рекомендации */}
-      {collectionStats && collectionStats.recommendations && (
-        <View style={styles.recommendationsContainer}>
-          <Text style={styles.sectionTitle}>Рекомендации по дополнению коллекции:</Text>
-          <FlatList
-            data={collectionStats.recommendations.recommendations}
-            renderItem={({ item }) => <PlayerProfile player={item} onPress={() => {}} />}
-            keyExtractor={item => item.id}
-            horizontal={true}
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.recommendationsList}
-          />
+  const handleRecommendationPress = (card) => {
+    const power = (card.attack || 0) + (card.defense || 0) + (card.speed || 0) + (card.technique || 0);
+    Alert.alert(
+      card.name,
+      `Позиция: ${CARD_POSITION_LABELS[card.position] || 'Позиция'}\nРедкость: ${RARITY_LABELS[card.rarity] || card.rarity}\nСила: ${power}\n\nЭтой карты ещё нет в коллекции.`,
+      [{ text: 'OK' }]
+    );
+  };
+
+  const renderHeader = () => (
+    <View style={styles.header}>
+      <View>
+        <Text style={styles.title}>Профиль</Text>
+        <Text style={styles.subtitle}>Локальный профиль</Text>
+      </View>
+      {status === 'ready' && profile && (
+        <View style={styles.currencyContainer}>
+          <Text style={styles.currencyText}>{profile.currency}</Text>
+          <Text style={styles.currencyLabel}>Монет</Text>
         </View>
       )}
     </View>
   );
 
-  // Рендер активности
-  const renderActivity = () => (
-    <View style={styles.activityContainer}>
-      <FlatList
-        data={recentActivity}
-        renderItem={({ item }) => (
-          <TouchableOpacity style={styles.activityItem} onPress={() => handleActivityPress(item)}>
-            <View style={styles.activityIconContainer}>
-              <View style={[
-                styles.activityIcon, 
-                item.type === 'match' && styles.matchIcon,
-                item.type === 'pack' && styles.packIcon,
-                item.type === 'achievement' && styles.achievementIcon,
-                item.type === 'tournament' && styles.tournamentIcon
-              ]}>
-                <Text style={styles.activityIconText}>
-                  {item.type === 'match' ? 'M' :
-                   item.type === 'pack' ? 'P' :
-                   item.type === 'achievement' ? 'A' : 'T'}
-                </Text>
-              </View>
-            </View>
-            
-            <View style={styles.activityContent}>
-              <Text style={styles.activityTitle}>{item.title}</Text>
-              <Text style={styles.activityDescription}>{item.description}</Text>
-              <Text style={styles.activityTime}>{new Date(item.timestamp).toLocaleString()}</Text>
-            </View>
-          </TouchableOpacity>
-        )}
-        keyExtractor={item => item.id}
-        contentContainerStyle={styles.activityList}
-        showsVerticalScrollIndicator={false}
-      />
-    </View>
-  );
-
-  // Рендер загрузки
-  if (loading) {
+  if (status === 'loading') {
     return (
       <View style={styles.container}>
-        <View style={styles.header}>
-          <Text style={styles.title}>Профиль</Text>
-        </View>
-        <View style={styles.loadingContainer}>
+        {renderHeader()}
+        <View style={styles.centered}>
           <ActivityIndicator size="large" color="#0066cc" />
-          <Text style={styles.loadingText}>Загрузка профиля...</Text>
+          <Text style={styles.centeredText}>Загрузка профиля...</Text>
+        </View>
+      </View>
+    );
+  }
+
+  if (status === 'error') {
+    return (
+      <View style={styles.container}>
+        {renderHeader()}
+        <View style={styles.centered}>
+          <Ionicons name="alert-circle-outline" size={40} color="#c62828" />
+          <Text style={styles.errorTitle}>Не удалось загрузить профиль</Text>
+          <Text style={styles.centeredText}>{errorMessage}</Text>
+          <TouchableOpacity
+            style={styles.primaryButton}
+            onPress={() => loadProfileData()}
+            accessibilityRole="button"
+          >
+            <Text style={styles.primaryButtonText}>Повторить</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    );
+  }
+
+  const collected = profile.completion.collectedCards || 0;
+  const total = profile.completion.totalCards || 0;
+  const percent = clampPercent(profile.completion.completionPercentage);
+  const collectionEmpty = collected === 0;
+
+  return (
+    <View style={styles.container}>
+      {renderHeader()}
+
+      <View style={styles.tabsContainer}>
+        <TabButton
+          label="Статистика"
+          active={selectedTab === 'stats'}
+          onPress={() => setSelectedTab('stats')}
+        />
+        <TabButton
+          label="Коллекция"
+          active={selectedTab === 'collection'}
+          onPress={() => setSelectedTab('collection')}
+        />
+        <TabButton
+          label="Активность"
+          active={selectedTab === 'activity'}
+          onPress={() => setSelectedTab('activity')}
+        />
+      </View>
+
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={() => loadProfileData({ silent: true })}
+            colors={['#0066cc']}
+            tintColor="#0066cc"
+          />
+        }
+      >
+        {selectedTab === 'stats' && (
+          <StatsTab profile={profile} collected={collected} total={total} percent={percent} />
+        )}
+        {selectedTab === 'collection' && (
+          <CollectionTab
+            profile={profile}
+            collected={collected}
+            total={total}
+            percent={percent}
+            collectionEmpty={collectionEmpty}
+            onOpenPacks={() => navigation.navigate('Пакеты')}
+            onRecommendationPress={handleRecommendationPress}
+          />
+        )}
+        {selectedTab === 'activity' && <ActivityTab activity={profile.activity} />}
+      </ScrollView>
+    </View>
+  );
+};
+
+const TabButton = ({ label, active, onPress }) => (
+  <TouchableOpacity
+    style={[styles.tabButton, active && styles.tabButtonActive]}
+    onPress={onPress}
+    accessibilityRole="button"
+    accessibilityState={{ selected: active }}
+  >
+    <Text style={[styles.tabButtonText, active && styles.tabButtonTextActive]}>{label}</Text>
+  </TouchableOpacity>
+);
+
+const StatsTab = ({ profile, collected, total, percent }) => {
+  const collection = profile.collection || {};
+  const tiles = [
+    { label: 'Монет', value: profile.currency },
+    { label: 'В коллекции', value: `${collected}/${total}` },
+    { label: 'Получено карт', value: collection.cardsObtained || 0 },
+    { label: 'Дубликатов', value: collection.duplicateCards || 0 },
+    { label: 'Улучшений', value: collection.cardUpgrades || 0 },
+  ];
+
+  return (
+    <View>
+      <View style={styles.card}>
+        <Text style={styles.sectionTitle}>Аккаунт</Text>
+        <View style={styles.tileRow}>
+          {tiles.map((tile) => (
+            <View key={tile.label} style={styles.tile}>
+              <Text style={styles.tileValue}>{tile.value}</Text>
+              <Text style={styles.tileLabel}>{tile.label}</Text>
+            </View>
+          ))}
+        </View>
+        <Text style={styles.progressCaption}>Коллекция заполнена на {percent}%</Text>
+        <View style={styles.progressTrack}>
+          <View style={[styles.progressFill, { width: `${percent}%` }]} />
+        </View>
+      </View>
+
+      <View style={styles.card}>
+        <Text style={styles.sectionTitle}>Матчи</Text>
+        <View style={styles.emptyBlock}>
+          <Ionicons name="football-outline" size={28} color="#0066cc" />
+          <Text style={styles.emptyTitle}>Матчей ещё не было</Text>
+          <Text style={styles.emptyText}>
+            Победы, ничьи и голы появятся здесь, когда история матчей будет сохраняться между экранами.
+          </Text>
+        </View>
+      </View>
+    </View>
+  );
+};
+
+const CollectionTab = ({
+  profile,
+  collected,
+  total,
+  percent,
+  collectionEmpty,
+  onOpenPacks,
+  onRecommendationPress,
+}) => (
+  <View>
+    <View style={styles.card}>
+      <Text style={styles.sectionTitle}>Заполнение</Text>
+      <Text style={styles.progressCaption}>{collected} из {total} карт · {percent}%</Text>
+      <View style={styles.progressTrack}>
+        <View style={[styles.progressFill, { width: `${percent}%` }]} />
+      </View>
+      {collectionEmpty && (
+        <View style={styles.emptyBlock}>
+          <Text style={styles.emptyTitle}>В коллекции пока нет карт</Text>
+          <Text style={styles.emptyText}>Откройте пакет — новые карты появятся в профиле.</Text>
+          <TouchableOpacity style={styles.primaryButton} onPress={onOpenPacks} accessibilityRole="button">
+            <Text style={styles.primaryButtonText}>Открыть пакеты</Text>
+          </TouchableOpacity>
+        </View>
+      )}
+    </View>
+
+    {!collectionEmpty && (
+      <>
+        <CountGrid title="По редкости" counts={profile.rarity} labels={RARITY_LABELS} colors={RARITY_COLORS} />
+        <CountGrid title="По позициям" counts={profile.position} labels={POSITION_LABELS} />
+      </>
+    )}
+
+    <View style={styles.card}>
+      <Text style={styles.sectionTitle}>Кого искать</Text>
+      <Text style={styles.progressCaption}>Не хватает карт: {profile.missingTotal}</Text>
+      {profile.recommendations.length === 0 ? (
+        <View style={styles.emptyBlock}>
+          <Text style={styles.emptyTitle}>Рекомендаций нет</Text>
+          <Text style={styles.emptyText}>Каталог собран — недостающих карт не осталось.</Text>
+        </View>
+      ) : (
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.recommendRow}>
+          {profile.recommendations.map((card) => (
+            <RecommendationCard key={card.id} card={card} onPress={() => onRecommendationPress(card)} />
+          ))}
+        </ScrollView>
+      )}
+    </View>
+  </View>
+);
+
+const CountGrid = ({ title, counts, labels, colors }) => (
+  <View style={styles.card}>
+    <Text style={styles.sectionTitle}>{title}</Text>
+    <View style={styles.tileRow}>
+      {Object.entries(labels).map(([key, label]) => (
+        <View key={key} style={styles.tile}>
+          {colors?.[key] && <View style={[styles.colorDot, { backgroundColor: colors[key] }]} />}
+          <Text style={styles.tileValue}>{counts?.[key] || 0}</Text>
+          <Text style={styles.tileLabel}>{label}</Text>
+        </View>
+      ))}
+    </View>
+  </View>
+);
+
+const RecommendationCard = ({ card, onPress }) => {
+  const borderColor = RARITY_COLORS[card.rarity] || RARITY_COLORS.common;
+  const power = (card.attack || 0) + (card.defense || 0) + (card.speed || 0) + (card.technique || 0);
+
+  return (
+    <TouchableOpacity
+      style={[styles.recommendCard, { borderColor }]}
+      onPress={onPress}
+      accessibilityRole="button"
+    >
+      <Text style={styles.recommendName} numberOfLines={2}>{card.name}</Text>
+      <Text style={styles.recommendMeta}>{CARD_POSITION_LABELS[card.position] || 'Позиция'}</Text>
+      <Text style={[styles.recommendRarity, { color: borderColor === '#CCCCCC' ? '#666' : borderColor }]}>
+        {RARITY_LABELS[card.rarity] || card.rarity}
+      </Text>
+      <Text style={styles.recommendPower}>Сила {power}</Text>
+    </TouchableOpacity>
+  );
+};
+
+const ActivityTab = ({ activity }) => {
+  if (!activity.length) {
+    return (
+      <View style={styles.card}>
+        <View style={styles.emptyBlock}>
+          <Ionicons name="time-outline" size={28} color="#0066cc" />
+          <Text style={styles.emptyTitle}>Пока нет событий</Text>
+          <Text style={styles.emptyText}>
+            Откройте пакет — здесь появится запись о полученных картах и дубликатах.
+          </Text>
         </View>
       </View>
     );
   }
 
   return (
-    <View style={styles.container}>
-      {/* Заголовок */}
-      <View style={styles.header}>
-        <Text style={styles.title}>Профиль</Text>
-        
-        {/* Баланс */}
-        {collectionStats && collectionStats.playerCurrency && (
-          <View style={styles.currencyContainer}>
-            <Text style={styles.currencyText}>{collectionStats.playerCurrency.currency}</Text>
-            <Text style={styles.currencyLabel}>Монет</Text>
+    <View style={styles.card}>
+      {activity.map((item) => (
+        <View key={item.id} style={styles.activityItem}>
+          <View style={styles.activityIcon}>
+            <Ionicons
+              name={item.type === 'pack' ? 'gift-outline' : item.type === 'achievement' ? 'trophy-outline' : 'albums-outline'}
+              size={20}
+              color="#0066cc"
+            />
           </View>
-        )}
-      </View>
-      
-      {/* Вкладки */}
-      <View style={styles.tabsContainer}>
-        <TouchableOpacity 
-          style={[
-            styles.tabButton, 
-            selectedTab === 'stats' && styles.tabButtonActive
-          ]}
-          onPress={() => setSelectedTab('stats')}
-        >
-          <Text style={styles.tabButtonText}>Статистика</Text>
-        </TouchableOpacity>
-        
-        <TouchableOpacity 
-          style={[
-            styles.tabButton, 
-            selectedTab === 'collection' && styles.tabButtonActive
-          ]}
-          onPress={() => setSelectedTab('collection')}
-        >
-          <Text style={styles.tabButtonText}>Коллекция</Text>
-        </TouchableOpacity>
-        
-        <TouchableOpacity 
-          style={[
-            styles.tabButton, 
-            selectedTab === 'activity' && styles.tabButtonActive
-          ]}
-          onPress={() => setSelectedTab('activity')}
-        >
-          <Text style={styles.tabButtonText}>Активность</Text>
-        </TouchableOpacity>
-      </View>
-      
-      {/* Контент */}
-      {selectedTab === 'stats' && renderStats()}
-      {selectedTab === 'collection' && renderCollection()}
-      {selectedTab === 'activity' && renderActivity()}
-      
-      {/* Кнопка обновления */}
-      <TouchableOpacity 
-        style={styles.refreshButton} 
-        onPress={loadProfileData}
-      >
-        <Text style={styles.refreshButtonText}>Обновить</Text>
-      </TouchableOpacity>
+          <View style={styles.activityBody}>
+            <Text style={styles.activityTitle}>{item.title}</Text>
+            <Text style={styles.activityDescription}>{item.description}</Text>
+            {!!item.timestamp && <Text style={styles.activityTime}>{formatTimestamp(item.timestamp)}</Text>}
+          </View>
+        </View>
+      ))}
     </View>
   );
 };
@@ -361,8 +486,9 @@ const styles = StyleSheet.create({
   },
   header: {
     backgroundColor: '#0066cc',
-    padding: 20,
-    paddingTop: 40,
+    paddingHorizontal: 20,
+    paddingTop: 48,
+    paddingBottom: 20,
     borderBottomLeftRadius: 30,
     borderBottomRightRadius: 30,
     flexDirection: 'row',
@@ -374,25 +500,244 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: 'white',
   },
+  subtitle: {
+    marginTop: 4,
+    fontSize: 13,
+    color: 'rgba(255, 255, 255, 0.85)',
+  },
   currencyContainer: {
-    backgroundColor: 'rgba(255, 255, 255, 0.3)',
-    paddingHorizontal: 15,
-    paddingVertical: 8,
+    minWidth: 72,
+    minHeight: 44,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    paddingHorizontal: 14,
+    paddingVertical: 6,
     borderRadius: 20,
+    justifyContent: 'center',
   },
   currencyText: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: 'white',
+    color: '#FFD700',
     textAlign: 'center',
   },
   currencyLabel: {
     fontSize: 12,
-    color: 'rgba(255, 255, 255, 0.8)',
+    color: 'rgba(255, 255, 255, 0.85)',
+    textAlign: 'center',
+  },
+  centered: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 24,
+  },
+  centeredText: {
+    marginTop: 12,
+    fontSize: 16,
+    color: '#666',
+    textAlign: 'center',
+  },
+  errorTitle: {
+    marginTop: 12,
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#333',
     textAlign: 'center',
   },
   tabsContainer: {
     flexDirection: 'row',
-    justifyContent: 'space-around',
-    margin: 10,
-    padding
+    marginHorizontal: 12,
+    marginTop: 12,
+    backgroundColor: 'white',
+    borderRadius: 12,
+    padding: 4,
+  },
+  tabButton: {
+    flex: 1,
+    minHeight: 44,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 4,
+  },
+  tabButtonActive: {
+    backgroundColor: '#0066cc',
+  },
+  tabButtonText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#333',
+  },
+  tabButtonTextActive: {
+    color: 'white',
+  },
+  scrollContent: {
+    padding: 12,
+    paddingBottom: 28,
+    flexGrow: 1,
+  },
+  card: {
+    backgroundColor: 'white',
+    borderRadius: 15,
+    padding: 16,
+    marginBottom: 12,
+  },
+  sectionTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#333',
+    marginBottom: 12,
+  },
+  tileRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+  },
+  tile: {
+    width: '48%',
+    minHeight: 64,
+    backgroundColor: '#f7f9fc',
+    borderRadius: 12,
+    padding: 10,
+    marginBottom: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  tileValue: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#333',
+  },
+  tileLabel: {
+    marginTop: 4,
+    fontSize: 12,
+    color: '#666',
+    textAlign: 'center',
+  },
+  colorDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    marginBottom: 6,
+  },
+  progressCaption: {
+    fontSize: 14,
+    color: '#666',
+    marginBottom: 8,
+  },
+  progressTrack: {
+    height: 10,
+    backgroundColor: '#eceff3',
+    borderRadius: 6,
+    overflow: 'hidden',
+  },
+  progressFill: {
+    height: '100%',
+    backgroundColor: '#0066cc',
+    borderRadius: 6,
+  },
+  emptyBlock: {
+    alignItems: 'center',
+    paddingVertical: 12,
+  },
+  emptyTitle: {
+    marginTop: 8,
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#333',
+    textAlign: 'center',
+  },
+  emptyText: {
+    marginTop: 6,
+    fontSize: 14,
+    lineHeight: 20,
+    color: '#666',
+    textAlign: 'center',
+  },
+  primaryButton: {
+    marginTop: 16,
+    minHeight: 44,
+    paddingHorizontal: 20,
+    borderRadius: 22,
+    backgroundColor: '#0066cc',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  primaryButtonText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  recommendRow: {
+    paddingTop: 8,
+    paddingBottom: 4,
+  },
+  recommendCard: {
+    width: 148,
+    minHeight: 120,
+    marginRight: 10,
+    padding: 12,
+    borderRadius: 12,
+    borderWidth: 2,
+    backgroundColor: '#fff',
+    justifyContent: 'space-between',
+  },
+  recommendName: {
+    fontSize: 15,
+    fontWeight: 'bold',
+    color: '#333',
+  },
+  recommendMeta: {
+    marginTop: 6,
+    fontSize: 12,
+    color: '#666',
+  },
+  recommendRarity: {
+    marginTop: 4,
+    fontSize: 12,
+    fontWeight: 'bold',
+  },
+  recommendPower: {
+    marginTop: 8,
+    fontSize: 13,
+    fontWeight: 'bold',
+    color: '#333',
+  },
+  activityItem: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f0f0',
+    minHeight: 44,
+  },
+  activityIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: '#e8f1fb',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 12,
+  },
+  activityBody: {
+    flex: 1,
+  },
+  activityTitle: {
+    fontSize: 15,
+    fontWeight: 'bold',
+    color: '#333',
+  },
+  activityDescription: {
+    marginTop: 4,
+    fontSize: 14,
+    color: '#555',
+  },
+  activityTime: {
+    marginTop: 4,
+    fontSize: 12,
+    color: '#888',
+  },
+});
+
+export default ProfileScreen;

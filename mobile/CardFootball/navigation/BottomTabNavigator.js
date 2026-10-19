@@ -8,6 +8,7 @@ import Icon from 'react-native-vector-icons/Ionicons';
 import PackOpeningScreen from '../screens/PackOpeningScreen';
 import CollectionScreen from '../screens/CollectionScreen';
 import TeamFormationScreen from '../screens/TeamFormationScreen';
+import ProfileScreen from '../screens/ProfileScreen';
 
 const Tab = createBottomTabNavigator();
 
@@ -25,6 +26,8 @@ const BottomTabNavigator = () => {
             iconName = focused ? 'albums' : 'albums-outline';
           } else if (route.name === 'Команда') {
             iconName = focused ? 'people' : 'people-outline';
+          } else if (route.name === 'Профиль') {
+            iconName = focused ? 'person' : 'person-outline';
           }
 
           return <Icon name={iconName} size={size} color={color} />;
@@ -48,6 +51,11 @@ const BottomTabNavigator = () => {
       <Tab.Screen name="Пакеты" component={PackOpeningScreen} />
       <Tab.Screen name="Коллекция" component={CollectionScreen} />
       <Tab.Screen name="Команда" component={TeamFormationScreen} />
+      <Tab.Screen
+        name="Профиль"
+        component={ProfileScreen}
+        options={{ headerShown: false }}
+      />
     </Tab.Navigator>
   );
 };
