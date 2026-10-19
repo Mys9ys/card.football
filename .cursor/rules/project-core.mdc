@@ -1,0 +1,14 @@
+---
+description: Базовый контекст проекта «Карточный футбол» — стек, границы, язык
+alwaysApply: true
+---
+
+# Карточный футбол — core
+
+- **Продукт:** коллекционная карточная игра (матчи, паки, турниры). Концепция: `docs/GAME_CONCEPT.md`, план: `docs/ROADMAP.md`.
+- **Клиент:** React Native Expo 54, `mobile/CardFootball/`.
+- **Логика (канон):** только `game_logic/`. Не редактировать `mobile/CardFootball/game_logic/` — устаревшая копия до shared-модуля (Lead).
+- **Backend:** план Node + Express + Mongo; реализация **только Lead** в основном чате. API — `docs/api/` после утверждения Lead.
+- **Язык:** ответы и docs — русский; код, коммиты, идентификаторы — English.
+- **Оркестр:** роли и порядок — `AGENTS.md`, процесс — `docs/WORKFLOW.md`.
+- **Handoff:** в конце задачи — Сделано / Acceptance criteria / Open questions.

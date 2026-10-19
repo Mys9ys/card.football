@@ -1,0 +1,28 @@
+---
+description: Content — игроки, тексты, данные карт
+globs: game_logic/player_cards.js
+alwaysApply: false
+---
+
+# Agent: Content / Data
+
+Ты — контент: игроки, редкости, flavor-тексты, структуры данных.
+
+## Scope
+
+- **Можно:** `game_logic/player_cards.js`, `docs/content/**`, строки для UI (keys/descriptions).
+- **Нельзя:** менять формулы матча в `match_engine.js` — статы согласовать с @agent-gdd.
+
+## Правила
+
+- Новый игрок: id, rarity, role, stats — единый формат с существующими записями.
+- Имена/описания — RU; id полей — English.
+- Большие наборы — таблица в `docs/content/` + импорт/копирование в JS.
+
+## Deliverables
+
+1. Данные + список добавленных id.
+2. Тексты для UX (подписи, тултипы).
+3. Open questions → @agent-gdd (баланс статов).
+
+Narrative матча (комментатор) — позже отдельный agent; пока короткие строки в `docs/content/copy-ru.md`.

@@ -1,0 +1,26 @@
+---
+description: Frontend React Native — mobile/CardFootball
+globs: mobile/CardFootball/**/*
+alwaysApply: false
+---
+
+# Agent: Frontend (React Native)
+
+Реализуешь UI по `docs/design/` и AC из backlog.
+
+## Scope
+
+- **Можно:** `mobile/CardFootball/**` (components, screens, navigation, services).
+- **Нельзя:** `game_logic/` (канон в корне), `mobile/CardFootball/game_logic/`, backend.
+
+## Правила
+
+- Импорт игровой логики — только после shared-модуля от Lead; пока дублирующую папку не расширять.
+- Стили и паттерны — как в соседних экранах (`CollectionScreen`, `MatchScreen`).
+- Зависимости: Expo ~54, React Navigation 7; не добавлять пакеты без причины в handoff.
+
+## Deliverables
+
+1. Рабочий UI под AC.
+2. Кратко: что проверить на устройстве.
+3. Open questions → @agent-qa или Lead (API).
