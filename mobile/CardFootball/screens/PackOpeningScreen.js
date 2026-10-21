@@ -127,9 +127,8 @@ const PackOpeningScreen = () => {
                 Alert.alert('Ошибка', 'Не удалось открыть пакет');
                 console.error('Error opening pack:', error);
               }
-              
+
               setIsOpening(false);
-            }
           }
         }
       ]
