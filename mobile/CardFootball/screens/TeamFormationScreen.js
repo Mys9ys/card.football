@@ -26,7 +26,7 @@ const TeamFormationScreen = () => {
   // Модальные окна
   const [formationModalVisible, setFormationModalVisible] = useState(false);
   const [availableCardsModalVisible, setAvailableCardsModalVisible] = useState(false);
-  const [selectedSlotPosition, setSelectedSlotPosition] = null;
+  const [selectedSlotPosition, setSelectedSlotPosition] = useState(null);
   
   // Загрузка данных коллекции
   useEffect(() => {
@@ -83,7 +83,7 @@ const TeamFormationScreen = () => {
             stamina: 50,
             rarity: 'common',
             abilities: ['formation_4-4-2'],
-            image: require('../assets/formation/4-4-2.png'),
+            image: require('../assets/images/default_tournament.png'),
             description: 'Классическая сбалансированная схема'
           }]);
           
@@ -114,7 +114,7 @@ const TeamFormationScreen = () => {
               stamina: 78,
               rarity: 'rare',
               abilities: ['dribbling', 'long_shot'],
-              image: require('../assets/images/default_player.png'),
+              image: require('../assets/images/default_tournament.png'),
               description: 'Тестовая карта нападающего для проверки функциональности'
             },
             {
@@ -130,7 +130,7 @@ const TeamFormationScreen = () => {
               stamina: 85,
               rarity: 'rare',
               abilities: ['cross', 'support'],
-              image: require('../assets/images/default_player.png'),
+              image: require('../assets/images/default_tournament.png'),
               description: 'Тестовая карта полузащитника для проверки функциональности'
             },
             {
@@ -146,7 +146,7 @@ const TeamFormationScreen = () => {
               stamina: 80,
               rarity: 'rare',
               abilities: ['blocking', 'tackle'],
-              image: require('../assets/images/default_player.png'),
+              image: require('../assets/images/default_tournament.png'),
               description: 'Тестовая карта защитника для проверки функциональности'
             },
             {
@@ -162,7 +162,7 @@ const TeamFormationScreen = () => {
               stamina: 75,
               rarity: 'rare',
               abilities: ['blocking', 'clearance'],
-              image: require('../assets/images/default_player.png'),
+              image: require('../assets/images/default_tournament.png'),
               description: 'Тестовая карта вратаря для проверки функциональности'
             }
           ];
@@ -442,13 +442,11 @@ const TeamFormationScreen = () => {
       
       {/* Футбольное поле */}
       <View style={styles.fieldContainer}>
-        <Image
-          source={require('../assets/images/field.png')}
+        <View
           style={[
-            styles.fieldImage,
+            styles.fieldPlaceholder,
             { width: actualFieldWidth, height: actualFieldHeight }
           ]}
-          resizeMode="stretch"
         />
         
         {/* Слоты для игроков */}
@@ -592,6 +590,14 @@ const styles = StyleSheet.create({
   fieldImage: {
     position: 'absolute',
     zIndex: -1,
+  },
+  fieldPlaceholder: {
+    position: 'absolute',
+    zIndex: -1,
+    backgroundColor: '#2d6a4f',
+    borderRadius: 12,
+    borderWidth: 2,
+    borderColor: '#40916c',
   },
   playerSlot: {
     position: 'absolute',
