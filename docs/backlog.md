@@ -9,7 +9,7 @@ _(пусто)_
 
 ## Ready
 
-Приоритет: **CF-105 QA** (GDD сдал код без тестов) → **CF-101** → **CF-103** → **CF-107** (UX).
+Приоритет: **CF-101** → **CF-103** → **CF-107** (UX). Дальше по зависимостям: CF-102, CF-104, CF-106.
 
 ### CF-101: Улучшение карт
 **Цель:** заменить заглушку `upgradeCard` правилами из `docs/CARD_COLLECTION_SYSTEM.md`.  
@@ -46,15 +46,6 @@ _(пусто)_
 **ROADMAP:** Фаза 3, UX/UI — состояния, размеры экранов, доступность касаний
 
 ## Ожидает зависимости
-
-### CF-105: Тесты валидации состава
-**Цель:** закрепить CF-105 (GDD: `squad_rules.js`, `docs/mechanics/squad-rules.md`).  
-**AC:**
-1) ≥3 unit-теста по сценариям из spec (`node --test game_logic/*.test.js`)
-2) `docs/qa/cf-105-squad-rules.md` с таблицей pass/fail
-**Исполнитель:** @agent-qa  
-**Зависимости:** GDD-часть CF-105 (готово)  
-**ROADMAP:** Фаза 2
 
 ### CF-102: Тесты улучшения карт
 **Цель:** закрепить правила CF-101 регрессом.  
@@ -109,8 +100,8 @@ _(пусто)_
 ### CF-002 / CF-002a: Профиль
 **Frontend + UX + QA:** `ProfileScreen.js`, `docs/design/profile.md`, smoke `docs/qa/cf-002a-profile-smoke.md` (ручной прогон — по желанию).
 
-### CF-105: Правила состава (GDD, без QA)
-**GDD:** `game_logic/squad_rules.js`, `docs/mechanics/squad-rules.md`. Тесты → CF-105 в «Ожидает зависимости».
+### CF-105: Правила состава + тесты
+**GDD + QA (Lead):** `squad_rules.js`, `docs/mechanics/squad-rules.md`, `squad_rules.test.js`, `docs/qa/cf-105-squad-rules.md`.
 
 ### CF-003: Backlog и приоритеты Фазы 2–3
 **Цель:** 5–10 задач из ROADMAP с AC.  
