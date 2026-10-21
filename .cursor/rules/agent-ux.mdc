@@ -26,4 +26,4 @@ alwaysApply: false
 - Expo 54, React Navigation 7, bottom tabs — см. `navigation/`.
 - Touch targets ≥ 44pt; контраст для текста на картах.
 
-Handoff → @agent-frontend-rn.
+Handoff → @agent-frontend-rn. Commit `CF-XXX: …` только `docs/design/`.

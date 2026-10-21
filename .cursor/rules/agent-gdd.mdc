@@ -24,3 +24,4 @@ alwaysApply: false
 1. Spec (кратко) + изменения в `game_logic/` если нужно.
 2. AC для QA (сценарии given/when/then).
 3. Open questions → @agent-content (данные) или Lead (online).
+4. После AC — commit `CF-XXX: …`, обнови `docs/backlog.md`; handoff @agent-qa для тестов.

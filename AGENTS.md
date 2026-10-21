@@ -36,7 +36,8 @@ PM → GDD → (Content + Balance*) → UX → Frontend → QA → Lead (инт�
 
 1. **Сделано** — список файлов / артефактов  
 2. **Acceptance criteria** — проверяемые пункты  
-3. **Open questions** — кому передать (следующий rule или Lead)
+3. **Open questions** — кому передать (следующий rule или Lead)  
+4. **Git** — `git commit` с `CF-XXX: …` (правила в [docs/WORKFLOW.md](docs/WORKFLOW.md#git-коммиты-агентов))
 
 Подробнее: [docs/WORKFLOW.md](docs/WORKFLOW.md).
 

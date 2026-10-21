@@ -25,4 +25,5 @@ alwaysApply: false
 2. Таблица: сценарий | ожидание | статус.
 3. Баги: шаги воспроизведения → Lead / GDD / Frontend.
 
-Запуск: `node --test` или jest — как заведёт Lead в package.json.
+Запуск: `node --test game_logic/*.test.js` из корня репо.
+После AC — commit `CF-XXX: …`, `docs/qa/`, обновление backlog.

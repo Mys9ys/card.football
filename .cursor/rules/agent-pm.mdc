@@ -24,6 +24,7 @@ alwaysApply: false
 1. Запись в backlog (формат: ID, цель, AC, агент-исполнитель, зависимости).
 2. Out of scope для задачи.
 3. Open questions → Lead или GDD.
+4. Commit `CF-XXX: …` только `docs/backlog.md` и связанные docs.
 
 ## Шаблон задачи
 

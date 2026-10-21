@@ -11,4 +11,5 @@ alwaysApply: true
 - **Backend:** план Node + Express + Mongo; реализация **только Lead** в основном чате. API — `docs/api/` после утверждения Lead.
 - **Язык:** ответы и docs — русский; код, коммиты, идентификаторы — English.
 - **Оркестр:** роли и порядок — `AGENTS.md`, процесс — `docs/WORKFLOW.md`.
-- **Handoff:** в конце задачи — Сделано / Acceptance criteria / Open questions.
+- **Handoff:** Сделано / AC / Open questions; при готовности — **commit** `CF-XXX: …` (см. docs/WORKFLOW.md, без secrets и IDE-мусора).
+- **Push:** только Lead или по просьбе пользователя.

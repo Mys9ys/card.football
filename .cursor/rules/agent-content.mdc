@@ -26,3 +26,4 @@ alwaysApply: false
 3. Open questions → @agent-gdd (баланс статов).
 
 Narrative матча (комментатор) — позже отдельный agent; пока короткие строки в `docs/content/copy-ru.md`.
+Commit `CF-XXX: …` — content-файлы и backlog.

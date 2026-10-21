@@ -8,7 +8,10 @@ class MatchEngine {
     this.half = 1;
     this.matchTime = 0;
     this.maxMatchTime = 90; // минуты
+    this.halfLength = 45;
     this.attacksPerHalf = 5;
+    // 10 розыгрышей на тайм (5 атак × 2 команды) × 4 мин = 40; свисток добирает до 45/90.
+    this.minutesPerAttack = 4;
     this.events = [];
   }
 
@@ -29,6 +32,7 @@ class MatchEngine {
 
     // Определяем, какая команда начинает с атаки
     this.currentPossession = Math.random() > 0.5 ? team1.id : team2.id;
+    this.half = 1;
     this.matchState = 'first_half';
     this.matchTime = 0;
 
@@ -84,33 +88,16 @@ class MatchEngine {
     // Определяем результат взаимодействия
     const result = this.resolveAttack(attackPower, defensePower, attackingTeam, defendingTeam);
 
-    // Обновляем количество оставшихся действий
+    // Списание относится к текущему тайму и не отменяется сменой тайма.
     attackingTeam.attacksLeft--;
     defendingTeam.defensesLeft--;
 
-    // Увеличиваем время матча
-    this.matchTime += 10; // Каждая атака занимает примерно 10 минут
+    this.matchTime += this.minutesPerAttack;
+    const actionTime = this.matchTime;
+    const halfBudgetsSpent = this._teamAttackBudgetsSpent();
 
-    // Проверяем, нужно ли менять тайм
-    if (this.half === 1 && this.matchTime >= 45) {
-      this.half = 2;
-      this.matchTime = 45;
-      // Восстанавливаем количество действий для второго тайма
-      Object.values(this.teams).forEach(team => {
-        team.attacksLeft = this.attacksPerHalf;
-        team.defensesLeft = this.attacksPerHalf;
-      });
-      
-      this.events.push({
-        time: 45,
-        type: 'half_time',
-        description: 'Перерыв! Команды возвращаются на вторую половину матча с полным запасом действий.'
-      });
-    }
-
-    // Фиксируем событие
     this.events.push({
-      time: this.matchTime,
+      time: actionTime,
       type: 'attack',
       attackingTeam: attackingTeam.name,
       defendingTeam: defendingTeam.name,
@@ -119,13 +106,63 @@ class MatchEngine {
       result
     });
 
+    let halfChanged = false;
+    if (halfBudgetsSpent && this.half === 1) {
+      halfChanged = true;
+      this._beginSecondHalf();
+    } else if (halfBudgetsSpent && this.half === 2) {
+      this._markFullTime();
+    }
+
     return {
       success: true,
       ...result,
       matchTime: this.matchTime,
       attacksLeft: attackingTeam.attacksLeft,
-      defensesLeft: defendingTeam.defensesLeft
+      defensesLeft: defendingTeam.defensesLeft,
+      halfChanged,
+      matchState: this.matchState,
+      half: this.half
     };
+  }
+
+  /**
+   * Обе команды потратили 5 атак текущего тайма.
+   */
+  _teamAttackBudgetsSpent() {
+    const teams = Object.values(this.teams);
+    return teams.length > 0 && teams.every(team => team.attacksLeft <= 0);
+  }
+
+  /**
+   * Второй тайм: новый запас 5/5, часы на 45. Розыгрыш, закрывший первый тайм, уже записан.
+   */
+  _beginSecondHalf() {
+    this.half = 2;
+    this.matchState = 'second_half';
+    this.matchTime = this.halfLength;
+    Object.values(this.teams).forEach(team => {
+      team.attacksLeft = this.attacksPerHalf;
+      team.defensesLeft = this.attacksPerHalf;
+    });
+
+    this.events.push({
+      time: this.halfLength,
+      type: 'half_time',
+      description: 'Перерыв! Команды возвращаются на вторую половину матча с полным запасом действий.'
+    });
+  }
+
+  /**
+   * Основное время вышло. Запас второго тайма не пополняется, матч не завершается сам.
+   */
+  _markFullTime() {
+    this.matchTime = this.maxMatchTime;
+    this.events.push({
+      time: this.maxMatchTime,
+      type: 'full_time',
+      description: 'Основное время закончено. У команд не осталось наборов в этом тайме.'
+    });
   }
 
   /**

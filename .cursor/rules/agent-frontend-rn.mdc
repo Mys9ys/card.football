@@ -24,3 +24,4 @@ alwaysApply: false
 1. Рабочий UI под AC.
 2. Кратко: что проверить на устройстве.
 3. Open questions → @agent-qa или Lead (API).
+4. Commit `CF-XXX: …` только `mobile/CardFootball/`.

@@ -9,21 +9,7 @@ _(пусто)_
 
 ## Ready
 
-Старт параллельно. **CF-001** закрыт; приоритет GDD: **CF-105** + фикс таймов (см. `docs/qa/cf-001-match-engine.md`).
-
-### CF-002a: UX spec профиля (догоняющая)
-**Цель:** закрыть пропуск spec-first для Profile.  
-**AC:** 1) `docs/design/profile.md` отражает текущий `ProfileScreen.js` 2) states и AC для QA  
-**Исполнитель:** @agent-ux  
-**Зависимости:** CF-002 (код уже в mobile)  
-**ROADMAP:** Фаза 3
-
-### CF-001b: Таймы и лимит 5 атак/защит
-**Цель:** исправить баг, найденный @agent-qa в CF-001.  
-**AC:** 1) `second_half`, смена тайма согласована с GAME_CONCEPT 2) 5 наборов за тайм не сбрасываются 3) тест регрессии в `match_engine.test.js`  
-**Исполнитель:** @agent-gdd → @agent-qa  
-**Зависимости:** CF-001  
-**ROADMAP:** Фаза 2
+Приоритет: **CF-105 QA** (GDD сдал код без тестов) → **CF-101** → **CF-103** → **CF-107** (UX).
 
 ### CF-101: Улучшение карт
 **Цель:** заменить заглушку `upgradeCard` правилами из `docs/CARD_COLLECTION_SYSTEM.md`.  
@@ -48,17 +34,6 @@ _(пусто)_
 **Вне скоупа:** UI счётчика, IAP, серверное хранение энергии; не править `upgradeCard` в этой задаче  
 **ROADMAP:** Фаза 2, система энергии/действий
 
-### CF-105: Правила состава
-**Цель:** состав нельзя сохранить и отправить в матч, если он не соответствует схеме.  
-**AC:**
-1) `docs/mechanics/squad-rules.md`: обязательный вратарь, слоты по выбранной схеме из `card_types.js`, одна и та же карта не занимает два слота
-2) чистая функция валидации в `game_logic/` (новый модуль или экспорт рядом с типами карт): невалидный состав → `success: false` и код ошибки
-3) три сценария given/when/then для QA в том же spec
-**Исполнитель:** @agent-gdd  
-**Зависимости:** нет  
-**Вне скоупа:** химия игроков, мотивация тренера, правка `TeamFormationScreen` (UI — после shared-модуля, см. Icebox)  
-**ROADMAP:** Фаза 2, механика составления команд
-
 ### CF-107: UX-состояния коллекции, матча и паков
 **Цель:** закрыть дыры Фазы 3 по states и размерам экрана на уже существующих экранах.  
 **AC:**
@@ -71,6 +46,15 @@ _(пусто)_
 **ROADMAP:** Фаза 3, UX/UI — состояния, размеры экранов, доступность касаний
 
 ## Ожидает зависимости
+
+### CF-105: Тесты валидации состава
+**Цель:** закрепить CF-105 (GDD: `squad_rules.js`, `docs/mechanics/squad-rules.md`).  
+**AC:**
+1) ≥3 unit-теста по сценариям из spec (`node --test game_logic/*.test.js`)
+2) `docs/qa/cf-105-squad-rules.md` с таблицей pass/fail
+**Исполнитель:** @agent-qa  
+**Зависимости:** GDD-часть CF-105 (готово)  
+**ROADMAP:** Фаза 2
 
 ### CF-102: Тесты улучшения карт
 **Цель:** закрепить правила CF-101 регрессом.  
@@ -119,11 +103,14 @@ _(пусто)_
 
 ## Сделано
 
-### CF-001: Unit-тесты match engine
-**Исполнитель:** @agent-qa — 21 тест, `node --test game_logic/match_engine.test.js`, см. `docs/qa/cf-001-match-engine.md`. Известный баг таймов → CF-001b.
+### CF-001 / CF-001b: Match engine + таймы
+**QA + GDD:** 26 тестов, `docs/mechanics/match-halves.md`, `docs/qa/cf-001-match-engine.md`.
 
-### CF-002: Экран профиля (Frontend)
-**Исполнитель:** @agent-frontend-rn — `ProfileScreen.js`, вкладка «Профиль». **Gap:** нет `docs/design/profile.md` (нарушен spec-first) → CF-002a.
+### CF-002 / CF-002a: Профиль
+**Frontend + UX + QA:** `ProfileScreen.js`, `docs/design/profile.md`, smoke `docs/qa/cf-002a-profile-smoke.md` (ручной прогон — по желанию).
+
+### CF-105: Правила состава (GDD, без QA)
+**GDD:** `game_logic/squad_rules.js`, `docs/mechanics/squad-rules.md`. Тесты → CF-105 в «Ожидает зависимости».
 
 ### CF-003: Backlog и приоритеты Фазы 2–3
 **Цель:** 5–10 задач из ROADMAP с AC.  

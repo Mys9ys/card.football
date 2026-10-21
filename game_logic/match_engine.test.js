@@ -13,6 +13,20 @@ function team(id, name, players) {
   return { id, name, players };
 }
 
+function startedMatch() {
+  const engine = new MatchEngine();
+  engine.initializeMatch(
+    team('home', 'Home', [player('attacker', 10, 0)]),
+    team('away', 'Away', [player('defender', 0, 10)])
+  );
+  return engine;
+}
+
+function play(engine, attackerId) {
+  const defenderId = attackerId === 'home' ? 'away' : 'home';
+  return engine.executeAttack(attackerId, defenderId, [], []);
+}
+
 describe('MatchEngine', () => {
   let originalRandom;
 
@@ -240,6 +254,135 @@ describe('MatchEngine', () => {
       assert.equal(result.success, false);
       assert.equal(result.error, 'У команды закончились защитные действия в этом тайме');
       assert.equal(engine.teams.home.attacksLeft, 5);
+    });
+  });
+
+  describe('half budgets', () => {
+    it('does not end the half after five attacks in one direction', () => {
+      const engine = startedMatch();
+      let fifth;
+
+      for (let i = 0; i < 5; i += 1) {
+        fifth = play(engine, 'home');
+        assert.equal(fifth.success, true);
+      }
+
+      assert.equal(fifth.attacksLeft, 0);
+      assert.equal(fifth.halfChanged, false);
+      assert.equal(fifth.matchTime, 20);
+      assert.equal(fifth.matchState, 'first_half');
+      assert.equal(fifth.half, 1);
+      assert.equal(engine.teams.home.attacksLeft, 0);
+      assert.equal(engine.teams.away.defensesLeft, 0);
+      assert.equal(engine.teams.away.attacksLeft, 5);
+      assert.equal(engine.teams.home.defensesLeft, 5);
+      assert.equal(engine.events.some((event) => event.type === 'half_time'), false);
+
+      const sixth = play(engine, 'home');
+      assert.equal(sixth.success, false);
+      assert.equal(sixth.error, 'У команды закончились атаки в этом тайме');
+      assert.equal(engine.matchState, 'first_half');
+      assert.equal(engine.teams.away.attacksLeft, 5);
+    });
+
+    it('does not refill budgets after five alternating attacks', () => {
+      const engine = startedMatch();
+
+      for (let i = 0; i < 5; i += 1) {
+        const result = play(engine, i % 2 === 0 ? 'home' : 'away');
+        assert.equal(result.success, true);
+        assert.equal(result.halfChanged, false);
+      }
+
+      const state = engine.getMatchState();
+      assert.equal(state.matchState, 'first_half');
+      assert.equal(state.half, 1);
+      assert.equal(state.matchTime, 20);
+      assert.equal(state.teams.home.attacksLeft, 2);
+      assert.equal(state.teams.away.attacksLeft, 3);
+      assert.equal(state.teams.home.defensesLeft, 3);
+      assert.equal(state.teams.away.defensesLeft, 2);
+      assert.equal(engine.events.some((event) => event.type === 'half_time'), false);
+    });
+
+    it('opens the second half only when both teams have spent five attacks', () => {
+      const engine = startedMatch();
+      engine.teams.home.attacksLeft = 1;
+      engine.teams.away.attacksLeft = 1;
+      engine.teams.home.defensesLeft = 1;
+      engine.teams.away.defensesLeft = 1;
+
+      const first = play(engine, 'home');
+      assert.equal(first.halfChanged, false);
+      assert.equal(engine.matchState, 'first_half');
+
+      const closing = play(engine, 'away');
+      const types = engine.events.map((event) => event.type);
+      const halfTimeAt = types.lastIndexOf('half_time');
+
+      assert.equal(closing.success, true);
+      assert.equal(closing.halfChanged, true);
+      assert.equal(closing.matchState, 'second_half');
+      assert.equal(closing.half, 2);
+      assert.equal(closing.matchTime, 45);
+      assert.equal(closing.attacksLeft, 5);
+      assert.equal(closing.defensesLeft, 5);
+      assert.equal(types[halfTimeAt - 1], 'attack');
+      assert.equal(engine.teams.home.attacksLeft, 5);
+      assert.equal(engine.teams.home.defensesLeft, 5);
+      assert.equal(engine.teams.away.attacksLeft, 5);
+      assert.equal(engine.teams.away.defensesLeft, 5);
+      assert.equal(engine.getMatchState().matchState, 'second_half');
+    });
+
+    it('spends a second-half attack without refilling', () => {
+      const engine = startedMatch();
+      engine.teams.home.attacksLeft = 1;
+      engine.teams.away.attacksLeft = 1;
+      engine.teams.home.defensesLeft = 1;
+      engine.teams.away.defensesLeft = 1;
+      play(engine, 'home');
+      play(engine, 'away');
+
+      const result = play(engine, 'home');
+
+      assert.equal(result.success, true);
+      assert.equal(result.halfChanged, false);
+      assert.equal(result.attacksLeft, 4);
+      assert.equal(result.matchState, 'second_half');
+      assert.equal(engine.half, 2);
+      assert.equal(engine.teams.home.attacksLeft, 4);
+      assert.equal(engine.teams.away.attacksLeft, 5);
+      assert.equal(engine.events.filter((event) => event.type === 'half_time').length, 1);
+    });
+
+    it('marks full time at 90 and rejects another attack without refilling', () => {
+      const engine = startedMatch();
+      let side = 'home';
+
+      for (let half = 0; half < 2; half += 1) {
+        for (let i = 0; i < 10; i += 1) {
+          const result = play(engine, side);
+          assert.equal(result.success, true);
+          side = side === 'home' ? 'away' : 'home';
+        }
+      }
+
+      assert.equal(engine.matchState, 'second_half');
+      assert.equal(engine.half, 2);
+      assert.equal(engine.matchTime, 90);
+      assert.equal(engine.teams.home.attacksLeft, 0);
+      assert.equal(engine.teams.away.attacksLeft, 0);
+      assert.equal(engine.teams.home.defensesLeft, 0);
+      assert.equal(engine.teams.away.defensesLeft, 0);
+      assert.equal(engine.events.some((event) => event.type === 'full_time'), true);
+
+      const extra = play(engine, 'home');
+      assert.equal(extra.success, false);
+      assert.equal(extra.error, 'У команды закончились атаки в этом тайме');
+      assert.equal(engine.teams.home.attacksLeft, 0);
+      assert.equal(engine.teams.away.attacksLeft, 0);
+      assert.equal(engine.matchState, 'second_half');
     });
   });
 
