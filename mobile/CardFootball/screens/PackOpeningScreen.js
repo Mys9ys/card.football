@@ -1,7 +1,7 @@
 // Экран открытия пакетов
 
 import React, { useState, useRef, useEffect } from 'react';
-import { View, Text, StyleSheet, FlatList, Alert, Modal, Image, TouchableOpacity, Animated, Easing } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Alert, Modal, Image, TouchableOpacity, Animated, Easing, Platform } from 'react-native';
 import LottieView from 'lottie-react-native';
 import { PackService } from '../services/PackService';
 import PackCard from '../components/PackCard';
@@ -20,6 +20,7 @@ const PackOpeningScreen = () => {
   const [isOpening, setIsOpening] = useState(false);
   const [showResults, setShowResults] = useState(false);
   const [packResult, setPackResult] = useState(null);
+  const [scrollAreaHeight, setScrollAreaHeight] = useState(0);
   const packAnimation = useRef(null);
   const pulseAnimation = useRef(new Animated.Value(1)).current;
 
@@ -135,13 +136,6 @@ const PackOpeningScreen = () => {
     );
   };
 
-  const renderPack = ({ item }) => (
-    <PackCard 
-      pack={item} 
-      onPress={() => handleOpenPack(item.id)} 
-    />
-  );
-
   const handleCloseResults = () => {
     setShowResults(false);
     setPackResult(null);
@@ -163,35 +157,49 @@ const PackOpeningScreen = () => {
   }
 
   return (
-    <View style={styles.container}>
-      {/* Заголовок */}
-      <View style={styles.header}>
-        <Text style={styles.title}>Открытие пакетов</Text>
-        <Text style={styles.subtitle}>Получайте новые карты для своей команды</Text>
-        <Image
-          source={require('../assets/theme/pack-bubble.jpg')}
-          style={styles.packHero}
-          resizeMode="cover"
-        />
-      </View>
-      
-      {/* Статистика коллекции */}
-      <CollectionStats 
-        stats={stats} 
-        completion={stats.completion} 
-      />
-      
-      {/* Список пакетов */}
-      <View style={styles.packsContainer}>
+    <View
+      style={styles.container}
+      onLayout={(e) => {
+        // Bound ScrollView height so web can scroll inside the phone column.
+        const next = Math.floor(e.nativeEvent.layout.height);
+        if (next > 0 && next !== scrollAreaHeight) {
+          setScrollAreaHeight(next);
+        }
+      }}
+    >
+      <ScrollView
+        style={[
+          styles.list,
+          scrollAreaHeight > 0 ? { height: scrollAreaHeight } : null,
+          Platform.OS === 'web' ? styles.listWeb : null,
+        ]}
+        contentContainerStyle={styles.listContent}
+        showsVerticalScrollIndicator
+        keyboardShouldPersistTaps="handled"
+        nestedScrollEnabled
+      >
+        <View style={styles.header}>
+          <Text style={styles.title}>Открытие пакетов</Text>
+          <Text style={styles.subtitle}>Получайте новые карты для своей команды</Text>
+          <Image
+            source={require('../assets/theme/pack-bubble.jpg')}
+            style={styles.packHero}
+            resizeMode="cover"
+          />
+        </View>
+
+        <CollectionStats stats={stats} completion={stats.completion} />
+
         <Text style={styles.packsTitle}>Доступные пакеты</Text>
-        <FlatList
-          data={packs}
-          renderItem={renderPack}
-          keyExtractor={item => item.id}
-          showsVerticalScrollIndicator={false}
-        />
-      </View>
-      
+        {packs.map((pack) => (
+          <PackCard
+            key={pack.id}
+            pack={pack}
+            onPress={() => handleOpenPack(pack.id)}
+          />
+        ))}
+      </ScrollView>
+
       {/* Модальное окно для отображения результатов открытия пакета */}
       <Modal
         animationType="slide"
@@ -266,12 +274,13 @@ const PackOpeningScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    height: '100%',
     backgroundColor: '#DFF6FF',
   },
   header: {
     backgroundColor: '#9BE7FF',
-    padding: 20,
-    paddingTop: 40,
+    padding: 16,
+    paddingTop: 24,
     borderBottomLeftRadius: 28,
     borderBottomRightRadius: 28,
   },
@@ -287,14 +296,24 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginTop: 5,
   },
-  packsContainer: {
-    flex: 1,
-    padding: 10,
+  list: {
+    flexGrow: 1,
+    flexShrink: 1,
+  },
+  listWeb: {
+    // RN Web: force overflow scroll once height is bounded
+    overflow: 'auto',
+  },
+  listContent: {
+    paddingBottom: 96,
+    paddingHorizontal: 4,
   },
   packsTitle: {
     fontSize: 20,
     fontWeight: 'bold',
-    margin: 10,
+    marginHorizontal: 16,
+    marginTop: 8,
+    marginBottom: 4,
     color: '#2A2150',
   },
   modalContainer: {
@@ -392,12 +411,12 @@ const styles = StyleSheet.create({
     color: '#2A2150',
   },
   packHero: {
-    width: 160,
-    height: 210,
+    width: 120,
+    height: 150,
     alignSelf: 'center',
-    marginTop: 12,
+    marginTop: 10,
     marginBottom: 4,
-    borderRadius: 24,
+    borderRadius: 20,
     borderWidth: 3,
     borderColor: '#FF6B8A',
   },
