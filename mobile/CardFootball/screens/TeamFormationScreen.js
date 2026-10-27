@@ -406,7 +406,7 @@ const TeamFormationScreen = () => {
           <Text style={styles.title}>Состав команды</Text>
         </View>
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#0066cc" />
+          <ActivityIndicator size="large" color="#FF6B8A" />
           <Text style={styles.loadingText}>Загрузка коллекции...</Text>
         </View>
       </View>
@@ -442,11 +442,13 @@ const TeamFormationScreen = () => {
       
       {/* Футбольное поле */}
       <View style={styles.fieldContainer}>
-        <View
+        <Image
+          source={require('../assets/theme/field-bubble.jpg')}
           style={[
             styles.fieldPlaceholder,
             { width: actualFieldWidth, height: actualFieldHeight }
           ]}
+          resizeMode="cover"
         />
         
         {/* Слоты для игроков */}
@@ -523,14 +525,14 @@ const TeamFormationScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: '#DFF6FF',
   },
   header: {
-    backgroundColor: '#0066cc',
+    backgroundColor: '#9BE7FF',
     padding: 20,
     paddingTop: 40,
-    borderBottomLeftRadius: 30,
-    borderBottomRightRadius: 30,
+    borderBottomLeftRadius: 28,
+    borderBottomRightRadius: 28,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
@@ -538,16 +540,18 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: 'white',
+    color: '#2A2150',
   },
   formationButton: {
-    backgroundColor: 'rgba(255, 255, 255, 0.3)',
+    backgroundColor: '#FF6B8A',
     paddingHorizontal: 15,
     paddingVertical: 8,
-    borderRadius: 20,
+    borderRadius: 999,
+    minHeight: 44,
+    justifyContent: 'center',
   },
   formationButtonText: {
-    color: 'white',
+    color: '#FFFFFF',
     fontSize: 16,
     fontWeight: 'bold',
   },
@@ -557,29 +561,23 @@ const styles = StyleSheet.create({
     marginVertical: 20,
     marginHorizontal: 20,
     padding: 15,
-    backgroundColor: 'white',
-    borderRadius: 15,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-    elevation: 5,
+    backgroundColor: '#FFF7FB',
+    borderRadius: 22,
+    borderWidth: 1,
+    borderColor: '#B9E8F7',
   },
   statItem: {
     alignItems: 'center',
   },
   statLabel: {
     fontSize: 14,
-    color: '#666',
+    color: '#6A6290',
     marginTop: 5,
   },
   statValue: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: '#333',
+    color: '#2A2150',
   },
   fieldContainer: {
     flex: 1,
@@ -594,10 +592,10 @@ const styles = StyleSheet.create({
   fieldPlaceholder: {
     position: 'absolute',
     zIndex: -1,
-    backgroundColor: '#2d6a4f',
-    borderRadius: 12,
-    borderWidth: 2,
-    borderColor: '#40916c',
+    backgroundColor: '#7AD9A0',
+    borderRadius: 22,
+    borderWidth: 3,
+    borderColor: '#FF6B8A',
   },
   playerSlot: {
     position: 'absolute',
@@ -605,14 +603,16 @@ const styles = StyleSheet.create({
     height: 50,
   },
   saveButton: {
-    backgroundColor: '#0066cc',
+    backgroundColor: '#FF6B8A',
     margin: 20,
     padding: 15,
-    borderRadius: 15,
+    borderRadius: 999,
     alignItems: 'center',
+    minHeight: 48,
+    justifyContent: 'center',
   },
   saveButtonDisabled: {
-    backgroundColor: '#cccccc',
+    backgroundColor: '#C9C4D8',
   },
   saveButtonText: {
     color: 'white',

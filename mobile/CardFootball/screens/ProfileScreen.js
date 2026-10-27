@@ -216,7 +216,7 @@ const ProfileScreen = ({ navigation }) => {
       <View style={styles.container}>
         {renderHeader()}
         <View style={styles.centered}>
-          <ActivityIndicator size="large" color="#0066cc" />
+          <ActivityIndicator size="large" color="#FF6B8A" />
           <Text style={styles.centeredText}>Загрузка профиля...</Text>
         </View>
       </View>
@@ -276,8 +276,8 @@ const ProfileScreen = ({ navigation }) => {
           <RefreshControl
             refreshing={refreshing}
             onRefresh={() => loadProfileData({ silent: true })}
-            colors={['#0066cc']}
-            tintColor="#0066cc"
+            colors={['#FF6B8A']}
+            tintColor="#FF6B8A"
           />
         }
       >
@@ -343,7 +343,7 @@ const StatsTab = ({ profile, collected, total, percent }) => {
       <View style={styles.card}>
         <Text style={styles.sectionTitle}>Матчи</Text>
         <View style={styles.emptyBlock}>
-          <Ionicons name="football-outline" size={28} color="#0066cc" />
+          <Ionicons name="football-outline" size={28} color="#FF6B8A" />
           <Text style={styles.emptyTitle}>Матчей ещё не было</Text>
           <Text style={styles.emptyText}>
             Победы, ничьи и голы появятся здесь, когда история матчей будет сохраняться между экранами.
@@ -447,7 +447,7 @@ const ActivityTab = ({ activity }) => {
     return (
       <View style={styles.card}>
         <View style={styles.emptyBlock}>
-          <Ionicons name="time-outline" size={28} color="#0066cc" />
+          <Ionicons name="time-outline" size={28} color="#FF6B8A" />
           <Text style={styles.emptyTitle}>Пока нет событий</Text>
           <Text style={styles.emptyText}>
             Откройте пакет — здесь появится запись о полученных картах и дубликатах.
@@ -465,7 +465,7 @@ const ActivityTab = ({ activity }) => {
             <Ionicons
               name={item.type === 'pack' ? 'gift-outline' : item.type === 'achievement' ? 'trophy-outline' : 'albums-outline'}
               size={20}
-              color="#0066cc"
+              color="#FF6B8A"
             />
           </View>
           <View style={styles.activityBody}>
@@ -482,10 +482,10 @@ const ActivityTab = ({ activity }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: '#DFF6FF',
   },
   header: {
-    backgroundColor: '#0066cc',
+    backgroundColor: '#9BE7FF',
     paddingHorizontal: 20,
     paddingTop: 48,
     paddingBottom: 20,
@@ -498,12 +498,12 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: 'white',
+    color: '#2A2150',
   },
   subtitle: {
     marginTop: 4,
     fontSize: 13,
-    color: 'rgba(255, 255, 255, 0.85)',
+    color: '#6A6290',
   },
   currencyContainer: {
     minWidth: 72,
@@ -561,7 +561,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 4,
   },
   tabButtonActive: {
-    backgroundColor: '#0066cc',
+    backgroundColor: '#FF6B8A',
   },
   tabButtonText: {
     fontSize: 13,
@@ -633,7 +633,7 @@ const styles = StyleSheet.create({
   },
   progressFill: {
     height: '100%',
-    backgroundColor: '#0066cc',
+    backgroundColor: '#FF6B8A',
     borderRadius: 6,
   },
   emptyBlock: {
@@ -659,7 +659,7 @@ const styles = StyleSheet.create({
     minHeight: 44,
     paddingHorizontal: 20,
     borderRadius: 22,
-    backgroundColor: '#0066cc',
+    backgroundColor: '#FF6B8A',
     alignItems: 'center',
     justifyContent: 'center',
   },

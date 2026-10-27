@@ -1,0 +1,813 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Карточный футбол — 5 дизайнов приложения</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Bangers&family=Fredoka:wght@500;600;700&family=Literata:opsz,wght@7..72,650;7..72,750&family=Manrope:wght@500;600;700;800&family=Nunito:wght@600;700;800&family=Russo+One&display=swap" rel="stylesheet" />
+  <style>
+    :root { --page:#12100e; --page-text:#f6f1e8; --page-muted:#b7aa9a; }
+    * { box-sizing:border-box; }
+    html,body { margin:0; }
+    body { font-family:Manrope,Nunito,sans-serif; background:var(--page); color:var(--page-text); }
+    button { font-family:inherit; }
+    .wrap { max-width:1240px; margin:0 auto; padding:24px 16px 80px; }
+    h1 { font-size:30px; margin:0 0 8px; letter-spacing:-.03em; }
+    .lead { margin:0 0 18px; color:var(--page-muted); font-size:16px; max-width:760px; line-height:1.45; }
+    .picks { display:grid; grid-template-columns:repeat(5,1fr); gap:12px; margin-bottom:14px; }
+    .pick {
+      text-align:left; border:1px solid #3a342c; background:#1c1916; color:var(--page-text);
+      border-radius:16px; padding:8px; cursor:pointer; min-height:170px; overflow:hidden;
+    }
+    .pick.active { border-color:#f6f1e8; box-shadow:0 0 0 1px #f6f1e8; }
+    .pick img { display:block; width:100%; aspect-ratio:1; object-fit:cover; border-radius:10px; margin-bottom:8px; }
+    .pick b { display:block; font-size:14px; }
+    .pick span { display:block; color:var(--page-muted); font-size:12px; margin-top:2px; }
+    .pick .tag { color:#e7d7ba; font-size:11px; font-weight:800; letter-spacing:.05em; text-transform:uppercase; }
+    .blurb { background:#1c1916; border-radius:14px; padding:12px 14px; margin-bottom:16px; font-size:15px; line-height:1.45; }
+    .label { margin:10px 0 8px; font-size:12px; letter-spacing:.08em; text-transform:uppercase; color:var(--page-muted); }
+
+    /* Four screens at once */
+    .screens-row {
+      display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-bottom:22px;
+    }
+    .mini {
+      background:#0a0908; border-radius:22px; padding:8px; cursor:pointer; border:1px solid #2c2823;
+      transition:border-color .15s;
+    }
+    .mini.active, .mini:hover { border-color:#f6f1e8; }
+    .mini-label { text-align:center; font-size:12px; font-weight:700; margin-bottom:6px; color:var(--page-muted); }
+    .mini.active .mini-label { color:#f6f1e8; }
+    .mini-phone {
+      height:340px; border-radius:16px; overflow:hidden; position:relative;
+      background:var(--bg); color:var(--text); font-family:var(--font);
+    }
+    .mini-phone .mh {
+      height:42px; padding:8px 10px; display:flex; justify-content:space-between; align-items:center;
+      background:var(--bar); font-family:var(--display); font-size:13px; font-weight:700;
+    }
+    .mini-phone .mb { position:absolute; inset:42px 0 0; overflow:hidden; }
+    .mini-phone img.cover { width:100%; height:100%; object-fit:cover; display:block; }
+    .mini-grid { display:grid; grid-template-columns:1fr 1fr; gap:4px; padding:6px; }
+    .mini-grid .pcard { transform:scale(.92); transform-origin:top center; }
+    .mini-pack { display:flex; align-items:center; justify-content:center; height:100%; padding:10px; background:var(--bg); }
+    .mini-pack img { width:58%; max-height:86%; object-fit:contain; border-radius:8px; }
+    .mini-team { height:100%; background:var(--bg); }
+    .mini-team img { width:100%; height:100%; object-fit:cover; }
+    .mini-profile { height:100%; background:var(--bg); }
+    .mini-profile .pbanner { height:38%; overflow:hidden; }
+    .mini-profile .pbanner img { width:100%; height:100%; object-fit:cover; }
+    .mini-profile .ptiles { display:grid; grid-template-columns:1fr 1fr; gap:6px; padding:8px; }
+    .mini-profile .ptile { background:var(--card); border-radius:var(--radius); padding:8px; border:1px solid var(--line); }
+    .mini-profile .ptile b { display:block; font-size:14px; font-family:var(--display); }
+    .mini-profile .ptile span { font-size:10px; color:var(--muted); }
+
+    .controls { display:flex; flex-wrap:wrap; gap:8px; margin:4px 0 14px; }
+    .ctrl, .chip, .cta, .tab { min-height:44px; border-radius:10px; cursor:pointer; }
+    .ctrl { border:1px solid #4a433a; background:#1c1916; color:var(--page-text); padding:0 14px; font-weight:700; }
+    .ctrl.active { background:#f6f1e8; color:#1a1612; }
+    .stage { display:grid; grid-template-columns:400px 1fr; gap:24px; align-items:start; }
+    .device {
+      width:390px; max-width:100%; height:780px; background:#050505; border-radius:36px; padding:10px;
+      box-shadow:0 30px 80px rgba(0,0,0,.45);
+    }
+    .skin.phone { height:100%; border-radius:28px; overflow:hidden; }
+    .ui { height:100%; display:flex; flex-direction:column; background:var(--bg); color:var(--text); font-family:var(--font); }
+    .appbar, .tabbar { background:var(--bar); }
+    .appbar { display:flex; justify-content:space-between; align-items:center; padding:16px 14px 8px; gap:8px; }
+    .appbar h2 { margin:0; font-family:var(--display); font-size:22px; font-weight:700; }
+    .coins {
+      min-height:44px; min-width:72px; padding:4px 10px; border-radius:999px; background:var(--coin-bg); color:var(--coin);
+      display:flex; flex-direction:column; align-items:center; justify-content:center; font-weight:800;
+    }
+    .coins small { font-weight:600; font-size:11px; color:var(--muted); }
+    .panels { flex:1; min-height:0; position:relative; }
+    .panel { position:absolute; inset:0; overflow:auto; padding:8px 12px 16px; display:none; }
+    .panel.active { display:block; }
+    .chips { display:flex; gap:8px; overflow-x:auto; padding-bottom:8px; }
+    .chip {
+      flex:0 0 auto; border:1px solid var(--line); background:transparent; color:var(--text);
+      padding:0 12px; font-weight:700; border-radius:var(--radius);
+    }
+    .chip.active { background:var(--primary); color:var(--on-primary); border-color:transparent; }
+    .grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+    .empty {
+      min-height:280px; display:none; flex-direction:column; align-items:center; justify-content:center;
+      text-align:center; gap:8px; padding:24px 12px;
+    }
+    .panel.empty-on .grid { display:none; }
+    .panel.empty-on .empty { display:flex; }
+    .ghost-slot { width:92px; height:128px; border:2px dashed var(--line); border-radius:var(--radius); margin-bottom:8px; }
+    .empty h3 { margin:0; font-size:18px; }
+    .empty p { margin:0; color:var(--muted); }
+    .cta { border:0; background:var(--primary); color:var(--on-primary); font-weight:800; font-size:16px; padding:0 16px; width:100%; }
+    .cta.ghost { background:transparent; color:var(--text); border:1px solid var(--line); }
+    .pack-closed, .pack-open { display:flex; flex-direction:column; align-items:center; gap:12px; padding-top:8px; }
+    .pack-open { display:none; width:100%; }
+    .panel.is-open .pack-closed { display:none; }
+    .panel.is-open .pack-open { display:flex; }
+    .pack-art {
+      width:190px; height:250px; object-fit:cover; border-radius:var(--radius);
+      border:2px solid var(--line); box-shadow:0 12px 30px rgba(0,0,0,.35);
+    }
+    .fan { display:flex; gap:8px; width:100%; overflow-x:auto; padding-bottom:4px; }
+    .fan .pcard { min-width:132px; }
+    .formation { display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; color:var(--muted); font-weight:800; }
+    .pitch {
+      position:relative; height:430px; border-radius:var(--radius); overflow:hidden;
+      background:#1f6b45 center/cover no-repeat;
+    }
+    .slot {
+      position:absolute; width:48px; height:48px; transform:translate(-50%,-50%);
+      border-radius:var(--radius); border:2px dashed #e7f6ec; background:rgba(0,0,0,.25);
+      color:#e7f6ec; display:flex; flex-direction:column; align-items:center; justify-content:center;
+      font-size:11px; font-weight:800; padding:0;
+    }
+    .slot.filled { border-style:solid; background:var(--card); color:var(--text); }
+    .slot.common { border-color:var(--c-border); }
+    .slot.rare { border-color:var(--r-border); }
+    .slot.epic { border-color:var(--e-border); }
+    .slot.legendary { border-color:var(--l-border); }
+    .slot small { font-size:9px; color:var(--muted); }
+    .profile-banner {
+      height:120px; margin:-8px -12px 12px; overflow:hidden; position:relative;
+      border-bottom:2px solid var(--line);
+    }
+    .profile-banner img { width:100%; height:100%; object-fit:cover; display:block; }
+    .profile-banner .overlay {
+      position:absolute; left:12px; bottom:10px; font-family:var(--display); font-size:18px; font-weight:800;
+      color:#fff; text-shadow:0 2px 8px rgba(0,0,0,.55);
+    }
+    .tiles { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+    .tile { background:var(--card); border-radius:var(--radius); padding:12px; border:1px solid var(--line); }
+    .tile b { display:block; font-family:var(--display); font-size:22px; }
+    .tile span { color:var(--muted); font-size:12px; }
+    .progress { height:8px; background:var(--track); border-radius:99px; margin:10px 0; overflow:hidden; }
+    .progress i { display:block; height:100%; width:18%; background:var(--bar-fill); }
+    .note { color:var(--muted); font-size:13px; }
+    .tabbar { display:grid; grid-template-columns:repeat(4,1fr); border-top:1px solid var(--line); }
+    .tab {
+      border:0; background:transparent; color:var(--muted); display:flex; flex-direction:column;
+      align-items:center; justify-content:center; gap:2px; font-size:11px; font-weight:700;
+      border-radius:0; min-height:56px;
+    }
+    .tab svg { width:20px; height:20px; }
+    .tab.active { color:var(--tab-active); }
+    .sheet {
+      position:absolute; inset:0; background:rgba(0,0,0,.55); display:none; align-items:flex-end; z-index:3;
+    }
+    .sheet.open { display:flex; }
+    .sheet-body {
+      width:100%; background:var(--card); color:var(--text); border-radius:18px 18px 0 0; padding:12px 12px 20px;
+    }
+    .side h3 { margin:0 0 8px; }
+    .side p { margin:0 0 12px; color:var(--page-muted); line-height:1.45; }
+    .legend { display:flex; flex-direction:column; gap:8px; }
+    .legend div { background:#1c1916; border-radius:12px; padding:12px 14px; }
+    .legend b { display:block; margin-bottom:4px; }
+    .quartet {
+      display:grid; grid-template-columns:repeat(4,1fr); gap:12px; padding:16px; border-radius:20px;
+      margin-bottom:18px; background:var(--bg); color:var(--text); align-items:start;
+    }
+
+    /* Cards */
+    .pcard {
+      position:relative; width:100%; text-align:left; cursor:pointer; overflow:hidden;
+      color:var(--text); background:var(--card); border:2px solid var(--c-border); padding:0; font-family:inherit;
+    }
+    .pcard.rare { border-color:var(--r-border); }
+    .pcard.epic { border-color:var(--e-border); }
+    .pcard.legendary { border-color:var(--l-border); }
+    .pcard .photo { display:block; width:100%; object-fit:cover; background:#222; }
+    .pcard .name { font-family:var(--display); font-weight:750; line-height:1.15; }
+    .pcard .meta { color:var(--muted); font-size:11px; font-weight:700; }
+    .pcard .stats { display:grid; grid-template-columns:1fr 1fr; gap:3px 8px; margin-top:6px; }
+    .pcard .stat { display:flex; align-items:center; gap:4px; color:var(--muted); font-size:11px; font-weight:700; }
+    .pcard .stat b { color:var(--text); font-size:12px; margin-left:auto; }
+    .pcard .bar { flex:1; height:3px; border-radius:99px; background:var(--track); overflow:hidden; }
+    .pcard .bar i { display:block; height:100%; width:var(--w); background:var(--bar-fill); }
+    .pcard .photo-wrap { position:relative; overflow:hidden; }
+    .pcard .ovr-ring {
+      position:absolute; display:grid; place-items:center; font-family:var(--display); font-weight:800; z-index:2;
+    }
+    .pcard .badge { position:absolute; z-index:2; font-size:10px; font-weight:900; letter-spacing:.05em; }
+
+    .skin {
+      --bg:#111; --bar:#1b1b1b; --card:#222; --text:#fff; --muted:#aaa;
+      --primary:#fff; --on-primary:#111; --line:#444; --radius:12px;
+      --font:Manrope,sans-serif; --display:Manrope,sans-serif;
+      --track:rgba(255,255,255,.16); --bar-fill:#fff; --tab-active:#fff;
+      --coin:#fff; --coin-bg:rgba(255,255,255,.12);
+      --c-border:#888; --r-border:#48f; --e-border:#a4f; --l-border:#fc4;
+      --c-badge:#333; --c-badge-text:#fff; --r-badge:#123; --r-badge-text:#fff;
+      --e-badge:#412; --e-badge-text:#fff; --l-badge:#fc4; --l-badge-text:#211;
+    }
+
+    /* 01 Stadium */
+    .skin[data-dir="stadium"] {
+      --bg:#0b1020; --bar:#161e30; --card:#161e30; --text:#f5f7fb; --muted:#c3cedf;
+      --primary:#ff4b3e; --on-primary:#fff; --line:#2a354c; --radius:12px;
+      --display:"Russo One",sans-serif; --bar-fill:#9cc8ff; --tab-active:#ff4b3e; --coin:#f0cc6a;
+      --c-border:#9aa6b8; --r-border:#8ebeff; --e-border:#c9a6ff; --l-border:#f0cc6a;
+      --c-badge:#2a3344; --c-badge-text:#f5f7fb; --r-badge:#16345c; --r-badge-text:#eaf3ff;
+      --e-badge:#3a2460; --e-badge-text:#f4e9ff; --l-badge:#f0cc6a; --l-badge-text:#2a2108;
+    }
+    .skin[data-dir="stadium"] .pcard { border-radius:14px; min-height:268px; box-shadow:0 10px 24px rgba(0,0,0,.4); }
+    .skin[data-dir="stadium"] .pcard.rare { box-shadow:0 0 16px rgba(142,190,255,.45); }
+    .skin[data-dir="stadium"] .pcard.epic { box-shadow:0 0 16px rgba(179,136,255,.45); }
+    .skin[data-dir="stadium"] .pcard.legendary { box-shadow:0 0 18px rgba(240,204,106,.55); }
+    .skin[data-dir="stadium"] .pcard .photo-wrap { height:148px; background:radial-gradient(circle at 50% 20%,#3a507a,#0b1020 70%); }
+    .skin[data-dir="stadium"] .pcard .photo { height:148px; object-position:center top; }
+    .skin[data-dir="stadium"] .pcard .ovr-ring {
+      left:10px; bottom:-18px; width:48px; height:48px; border-radius:50%; background:#0b1020;
+      border:3px solid var(--c-border); font-size:16px; color:#fff;
+    }
+    .skin[data-dir="stadium"] .pcard.rare .ovr-ring { border-color:var(--r-border); box-shadow:0 0 10px rgba(142,190,255,.7); }
+    .skin[data-dir="stadium"] .pcard.epic .ovr-ring { border-color:var(--e-border); box-shadow:0 0 10px rgba(179,136,255,.7); }
+    .skin[data-dir="stadium"] .pcard.legendary .ovr-ring { border-color:var(--l-border); color:#f0cc6a; box-shadow:0 0 12px rgba(240,204,106,.8); }
+    .skin[data-dir="stadium"] .pcard .badge {
+      top:12px; right:-2px; padding:5px 14px 5px 12px;
+      clip-path:polygon(0 0,100% 0,92% 50%,100% 100%,0 100%,8% 50%);
+      background:var(--c-badge); color:var(--c-badge-text);
+    }
+    .skin[data-dir="stadium"] .pcard.rare .badge { background:var(--r-badge); color:var(--r-badge-text); }
+    .skin[data-dir="stadium"] .pcard.epic .badge { background:var(--e-badge); color:var(--e-badge-text); }
+    .skin[data-dir="stadium"] .pcard.legendary .badge { background:var(--l-badge); color:var(--l-badge-text); }
+    .skin[data-dir="stadium"] .pcard .body { padding:22px 10px 10px; }
+    .skin[data-dir="stadium"] .pcard .name { font-size:14px; min-height:2.2em; }
+
+    /* 02 Album */
+    .skin[data-dir="album"] {
+      --bg:#e7d7ba; --bar:#e7d7ba; --card:#fff8ee; --text:#2a2118; --muted:#6b5e4e;
+      --primary:#1f6b4a; --on-primary:#fff8ee; --line:#c9b89a; --radius:2px;
+      --display:Literata,Georgia,serif; --font:Nunito,sans-serif; --bar-fill:#1f6b4a; --tab-active:#1f6b4a;
+      --coin:#9e2b2b; --coin-bg:#fff8ee;
+      --c-border:#8a8175; --r-border:#8d939c; --e-border:#7a4e9a; --l-border:#c6a15a;
+      --c-badge:#efe3cf; --c-badge-text:#5c5348; --r-badge:#e8ecf0; --r-badge-text:#2a2118;
+      --e-badge:#efe4f7; --e-badge-text:#2a2118; --l-badge:#f7ecd0; --l-badge-text:#6b4e16;
+      --track:#e6d8c2;
+    }
+    .skin[data-dir="album"] .pcard {
+      border-radius:3px; min-height:292px; box-shadow:0 1px 0 #d9cdb6,0 3px 0 rgba(42,33,24,.12);
+      background:radial-gradient(circle at 6px 6px,transparent 3px,#fff8ee 3.5px) 0 0/12px 12px,#fff8ee;
+    }
+    .skin[data-dir="album"] .pcard.legendary { border-width:3px; box-shadow:inset 0 0 0 1px #8a6a2f,0 2px 0 rgba(42,33,24,.18); }
+    .skin[data-dir="album"] .pcard .photo-wrap {
+      margin:8px 8px 0; height:120px; overflow:visible; border:1px solid #d7c8ad;
+      background:radial-gradient(#2a2118 .7px,transparent .8px); background-size:4px 4px;
+    }
+    .skin[data-dir="album"] .pcard .photo { height:120px; mix-blend-mode:multiply; opacity:.92; }
+    .skin[data-dir="album"] .pcard .ovr-ring {
+      right:6px; top:6px; width:40px; height:40px; border-radius:50%; border:2px dashed currentColor;
+      background:#fff8ee; font-size:14px; color:#2a2118;
+    }
+    .skin[data-dir="album"] .pcard.rare .ovr-ring { color:#5c6670; border-style:solid; }
+    .skin[data-dir="album"] .pcard.epic .ovr-ring { color:#7a4e9a; border-style:solid; }
+    .skin[data-dir="album"] .pcard.legendary .ovr-ring { color:#8a6a2f; border-style:double; border-width:3px; }
+    .skin[data-dir="album"] .pcard .badge {
+      left:10px; bottom:-12px; padding:3px 8px; border:1px solid currentColor; border-radius:2px;
+      transform:rotate(-2deg); background:var(--c-badge); color:var(--c-badge-text); box-shadow:1px 1px 0 rgba(42,33,24,.15);
+    }
+    .skin[data-dir="album"] .pcard.rare .badge { background:var(--r-badge); color:var(--r-badge-text); border-color:#8d939c; }
+    .skin[data-dir="album"] .pcard.epic .badge { background:var(--e-badge); color:var(--e-badge-text); border-color:#7a4e9a; }
+    .skin[data-dir="album"] .pcard.legendary .badge { background:var(--l-badge); color:var(--l-badge-text); border-color:#c6a15a; }
+    .skin[data-dir="album"] .pcard .body {
+      margin:14px 8px 8px; border:1px solid #d7c8ad; padding:8px; background:#fffdf8;
+    }
+    .skin[data-dir="album"] .pcard .name { font-size:15px; min-height:2.3em; }
+    .skin[data-dir="album"] .coins { border-radius:4px; }
+
+    /* 03 Bubble — cartoon soft */
+    .skin[data-dir="bubble"] {
+      --bg:#dff6ff; --bar:#9be7ff; --card:#fff7fb; --text:#2a2150; --muted:#6a6290;
+      --primary:#ff6b8a; --on-primary:#fff; --line:#b9e8f7; --radius:22px;
+      --display:Fredoka,Nunito,sans-serif; --font:Fredoka,Nunito,sans-serif;
+      --bar-fill:#5ad0ff; --tab-active:#ff6b8a; --coin:#fff; --coin-bg:#ff6b8a;
+      --c-border:#a8b0d0; --r-border:#5ad0ff; --e-border:#c77dff; --l-border:#ffd166;
+      --c-badge:#eef1ff; --c-badge-text:#5a6288; --r-badge:#d9f5ff; --r-badge-text:#0a6f96;
+      --e-badge:#f3e4ff; --e-badge-text:#6b2ea8; --l-badge:#ffe8a3; --l-badge-text:#8a5a00;
+      --track:#e5f7ff;
+    }
+    .skin[data-dir="bubble"] .pcard {
+      display:flex;
+      flex-direction:column;
+      border-radius:24px; border-width:3px;
+      height:268px;
+      min-height:268px;
+      max-height:268px;
+      box-shadow:0 8px 0 rgba(42,33,80,.12);
+    }
+    .skin[data-dir="bubble"] .pcard.legendary { box-shadow:0 0 0 4px #fff3c4, 0 8px 0 rgba(42,33,80,.12); }
+    .skin[data-dir="bubble"] .pcard .photo-wrap {
+      flex:0 0 158px;
+      height:158px; min-height:158px; max-height:158px;
+      border-bottom:3px solid currentColor; color:var(--c-border);
+    }
+    .skin[data-dir="bubble"] .pcard.rare .photo-wrap { color:var(--r-border); }
+    .skin[data-dir="bubble"] .pcard.epic .photo-wrap { color:var(--e-border); }
+    .skin[data-dir="bubble"] .pcard.legendary .photo-wrap { color:var(--l-border); }
+    .skin[data-dir="bubble"] .pcard .photo {
+      height:158px; width:100%;
+      object-fit:cover;
+      object-position:center 12%;
+    }
+    .skin[data-dir="bubble"] .pcard .ovr-ring {
+      left:10px; bottom:-14px; width:48px; height:48px; border-radius:50%;
+      background:#fff; border:4px solid var(--c-border); font-size:16px; color:#2a2150;
+    }
+    .skin[data-dir="bubble"] .pcard.rare .ovr-ring { border-color:var(--r-border); }
+    .skin[data-dir="bubble"] .pcard.epic .ovr-ring { border-color:var(--e-border); }
+    .skin[data-dir="bubble"] .pcard.legendary .ovr-ring { border-color:var(--l-border); background:#fff8df; }
+    .skin[data-dir="bubble"] .pcard .badge {
+      top:10px; right:10px; padding:6px 10px; border-radius:999px; border:2px solid currentColor;
+      background:var(--c-badge); color:var(--c-badge-text);
+    }
+    .skin[data-dir="bubble"] .pcard.rare .badge { background:var(--r-badge); color:var(--r-badge-text); border-color:var(--r-border); }
+    .skin[data-dir="bubble"] .pcard.epic .badge { background:var(--e-badge); color:var(--e-badge-text); border-color:var(--e-border); }
+    .skin[data-dir="bubble"] .pcard.legendary .badge { background:var(--l-badge); color:var(--l-badge-text); border-color:var(--l-border); }
+    .skin[data-dir="bubble"] .pcard .body {
+      flex:0 0 auto;
+      padding:14px 12px 10px;
+      display:flex;
+      flex-direction:column;
+    }
+    .skin[data-dir="bubble"] .pcard .name {
+      font-size:15px;
+      height:1.25em;
+      min-height:1.25em;
+      max-height:1.25em;
+      line-height:1.25;
+      margin:0;
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+    }
+    .skin[data-dir="bubble"] .pcard .name.is-long { font-size:13px; }
+    .skin[data-dir="bubble"] .pcard .name.is-longer { font-size:11.5px; }
+    .skin[data-dir="bubble"] .pcard .meta { margin-top:2px; }
+    .skin[data-dir="bubble"] .pcard .stats { margin-top:8px; margin-bottom:0; }
+    .skin[data-dir="bubble"] .grid { align-items:stretch; }
+    .skin[data-dir="bubble"] .quartet { align-items:stretch; }
+    .skin[data-dir="bubble"] .fan .pcard {
+      height:248px; min-height:248px; max-height:248px;
+    }
+    .skin[data-dir="bubble"] .fan .pcard .photo-wrap,
+    .skin[data-dir="bubble"] .fan .pcard .photo {
+      flex:0 0 120px; height:120px; min-height:120px; max-height:120px;
+    }
+    .skin[data-dir="bubble"] .cta, .skin[data-dir="bubble"] .chip, .skin[data-dir="bubble"] .slot { border-radius:999px; }
+    .skin[data-dir="bubble"] .pack-art { border-radius:24px; border-width:3px; border-color:#ff6b8a; }
+
+    /* 04 Comic */
+    .skin[data-dir="comic"] {
+      --bg:#fff4d6; --bar:#111; --card:#fff; --text:#111; --muted:#555;
+      --primary:#ff2e2e; --on-primary:#fff; --line:#111; --radius:0;
+      --display:Bangers,Nunito,sans-serif; --font:Nunito,sans-serif;
+      --bar-fill:#ffcc00; --tab-active:#ffcc00; --coin:#111; --coin-bg:#ffcc00;
+      --c-border:#777; --r-border:#1e90ff; --e-border:#9b30ff; --l-border:#ffcc00;
+      --c-badge:#eee; --c-badge-text:#111; --r-badge:#1e90ff; --r-badge-text:#fff;
+      --e-badge:#9b30ff; --e-badge-text:#fff; --l-badge:#ffcc00; --l-badge-text:#111;
+      --track:#eee;
+    }
+    .skin[data-dir="comic"] .appbar h2, .skin[data-dir="comic"] .coins { color:#ffcc00; }
+    .skin[data-dir="comic"] .coins { border-radius:0; border:2px solid #ffcc00; }
+    .skin[data-dir="comic"] .pcard {
+      border-width:3px; min-height:286px; box-shadow:5px 5px 0 #111;
+      background:
+        radial-gradient(#000 0.6px, transparent 0.7px) 0 0/5px 5px,
+        #fff;
+    }
+    .skin[data-dir="comic"] .pcard.legendary { box-shadow:5px 5px 0 #ffcc00, 9px 9px 0 #111; }
+    .skin[data-dir="comic"] .pcard .photo-wrap { height:130px; border-bottom:3px solid #111; }
+    .skin[data-dir="comic"] .pcard .photo { height:130px; }
+    .skin[data-dir="comic"] .pcard .ovr-ring {
+      left:8px; top:8px; width:48px; height:48px; border-radius:50%;
+      background:#ffcc00; border:3px solid #111; font-size:18px; color:#111;
+      transform:rotate(-8deg);
+    }
+    .skin[data-dir="comic"] .pcard.rare .ovr-ring { background:#1e90ff; color:#fff; }
+    .skin[data-dir="comic"] .pcard.epic .ovr-ring { background:#9b30ff; color:#fff; }
+    .skin[data-dir="comic"] .pcard.legendary .ovr-ring { background:#ffcc00; }
+    .skin[data-dir="comic"] .pcard .badge {
+      right:-4px; top:18px; padding:6px 12px; background:var(--c-badge); color:var(--c-badge-text);
+      border:3px solid #111; transform:rotate(8deg); font-family:var(--display); font-size:14px; letter-spacing:.04em;
+    }
+    .skin[data-dir="comic"] .pcard.rare .badge { background:var(--r-badge); color:var(--r-badge-text); }
+    .skin[data-dir="comic"] .pcard.epic .badge { background:var(--e-badge); color:var(--e-badge-text); }
+    .skin[data-dir="comic"] .pcard.legendary .badge { background:var(--l-badge); color:var(--l-badge-text); }
+    .skin[data-dir="comic"] .pcard .body { padding:10px; background:#fff; }
+    .skin[data-dir="comic"] .pcard .name { font-size:18px; min-height:1.8em; }
+    .skin[data-dir="comic"] .cta { border-radius:0; border:3px solid #111; box-shadow:4px 4px 0 #111; }
+    .skin[data-dir="comic"] .chip, .skin[data-dir="comic"] .slot, .skin[data-dir="comic"] .tile { border-radius:0; border-width:2px; }
+    .skin[data-dir="comic"] .pack-art { border:3px solid #111; border-radius:0; box-shadow:6px 6px 0 #111; }
+
+    /* 05 Clay */
+    .skin[data-dir="clay"] {
+      --bg:#ffe9c7; --bar:#ffb703; --card:#fff6e8; --text:#3d2914; --muted:#8a6a45;
+      --primary:#219ebc; --on-primary:#fff; --line:#f0c987; --radius:18px;
+      --display:Fredoka,Nunito,sans-serif; --font:Fredoka,Nunito,sans-serif;
+      --bar-fill:#fb8500; --tab-active:#023047; --coin:#023047; --coin-bg:#fff6e8;
+      --c-border:#c4a484; --r-border:#219ebc; --e-border:#9b5de5; --l-border:#fb8500;
+      --c-badge:#f3e2c7; --c-badge-text:#6b5130; --r-badge:#d7f1f8; --r-badge-text:#0b5f73;
+      --e-badge:#efd9ff; --e-badge-text:#5a2d8a; --l-badge:#ffe0b5; --l-badge-text:#8a4500;
+      --track:#f6e2c2;
+    }
+    .skin[data-dir="clay"] .pcard {
+      border-radius:20px; border-width:4px; min-height:292px;
+      box-shadow:0 10px 0 rgba(61,41,20,.12);
+    }
+    .skin[data-dir="clay"] .pcard.legendary { border-color:#fb8500; box-shadow:0 0 0 3px #ffe0b5, 0 10px 0 rgba(61,41,20,.12); }
+    .skin[data-dir="clay"] .pcard .photo-wrap { height:136px; border-bottom:4px solid rgba(61,41,20,.12); }
+    .skin[data-dir="clay"] .pcard .photo { height:136px; }
+    .skin[data-dir="clay"] .pcard .ovr-ring {
+      right:10px; bottom:-18px; width:50px; height:50px; border-radius:46% 54% 50% 50% / 48% 48% 52% 52%;
+      background:#fff6e8; border:4px solid var(--c-border); font-size:16px; color:#3d2914;
+    }
+    .skin[data-dir="clay"] .pcard.rare .ovr-ring { border-color:var(--r-border); }
+    .skin[data-dir="clay"] .pcard.epic .ovr-ring { border-color:var(--e-border); }
+    .skin[data-dir="clay"] .pcard.legendary .ovr-ring { border-color:var(--l-border); background:#ffe8c8; }
+    .skin[data-dir="clay"] .pcard .badge {
+      left:10px; top:10px; padding:5px 10px; border-radius:14px 18px 12px 16px;
+      background:var(--c-badge); color:var(--c-badge-text); border:3px solid currentColor;
+    }
+    .skin[data-dir="clay"] .pcard.rare .badge { background:var(--r-badge); color:var(--r-badge-text); border-color:var(--r-border); }
+    .skin[data-dir="clay"] .pcard.epic .badge { background:var(--e-badge); color:var(--e-badge-text); border-color:var(--e-border); }
+    .skin[data-dir="clay"] .pcard.legendary .badge { background:var(--l-badge); color:var(--l-badge-text); border-color:var(--l-border); }
+    .skin[data-dir="clay"] .pcard .body { padding:22px 12px 12px; }
+    .skin[data-dir="clay"] .pcard .name { font-size:15px; min-height:2.2em; }
+    .skin[data-dir="clay"] .cta { border-radius:18px; box-shadow:0 5px 0 #126782; }
+    .skin[data-dir="clay"] .pack-art { border-radius:22px; border-width:4px; border-color:#fb8500; }
+
+    @media (max-width:1100px) {
+      .picks, .screens-row, .quartet { grid-template-columns:1fr 1fr; }
+      .stage { grid-template-columns:1fr; }
+      .device { margin:0 auto; }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>Пять дизайнов всего приложения</h1>
+    <p class="lead">
+      Оставил <b>Прожектор</b> и <b>Клеевой альбом</b>. Вместо неона / витрины / автомата — три мультяшных:
+      <b>Шарик</b>, <b>Комикс</b>, <b>Пластилин</b>.
+      Сверху сразу видны все экраны выбранного дизайна. Ниже — большой телефон, где можно покликать.
+    </p>
+
+    <div class="picks" id="picks">
+      <button class="pick" data-pick="stadium" type="button">
+        <img src="assets/pick-stadium.jpg" alt="" />
+        <b>1. Прожектор</b><span>ночной эфир</span>
+      </button>
+      <button class="pick" data-pick="album" type="button">
+        <img src="assets/pick-album.jpg" alt="" />
+        <b>2. Клеевой альбом</b><span>наклейки</span>
+      </button>
+      <button class="pick active" data-pick="bubble" type="button">
+        <img src="assets/pick-bubble.jpg" alt="" />
+        <b>3. Шарик</b><span class="tag">выбрано</span>
+      </button>
+      <button class="pick" data-pick="comic" type="button">
+        <img src="assets/pick-comic.jpg" alt="" />
+        <b>4. Комикс</b><span>взрыв и обводка</span>
+      </button>
+      <button class="pick" data-pick="clay" type="button">
+        <img src="assets/pick-clay.jpg" alt="" />
+        <b>5. Пластилин</b><span>игрушечный стадион</span>
+      </button>
+    </div>
+
+    <div class="blurb" id="blurb"></div>
+
+    <div class="label">Все экраны сразу — нажмите, чтобы открыть в большом телефоне</div>
+    <div class="screens-row skin" id="screens-row" data-dir="bubble">
+      <div class="mini active" data-screen="collection">
+        <div class="mini-label">Коллекция</div>
+        <div class="mini-phone"><div class="mh"><span>Коллекция</span><span>1000</span></div><div class="mb" id="mini-collection"></div></div>
+      </div>
+      <div class="mini" data-screen="pack">
+        <div class="mini-label">Вскрытие пака</div>
+        <div class="mini-phone"><div class="mh"><span>Пакеты</span><span>1000</span></div><div class="mb mini-pack" id="mini-pack"></div></div>
+      </div>
+      <div class="mini" data-screen="team">
+        <div class="mini-label">Команда</div>
+        <div class="mini-phone"><div class="mh"><span>Команда</span><span>4-4-2</span></div><div class="mb mini-team" id="mini-team"></div></div>
+      </div>
+      <div class="mini" data-screen="profile">
+        <div class="mini-label">Профиль</div>
+        <div class="mini-phone"><div class="mh"><span>Профиль</span><span>1000</span></div><div class="mb mini-profile" id="mini-profile"></div></div>
+      </div>
+    </div>
+
+    <div class="label">Четыре редкости одной карты</div>
+    <div class="skin quartet" id="quartet" data-dir="bubble"></div>
+
+    <div class="label">Большой телефон — покликайте</div>
+    <div class="controls" id="screen-controls">
+      <button class="ctrl active" type="button" data-screen="collection">Коллекция</button>
+      <button class="ctrl" type="button" data-screen="pack">Вскрытие пака</button>
+      <button class="ctrl" type="button" data-screen="team">Команда</button>
+      <button class="ctrl" type="button" data-screen="profile">Профиль</button>
+      <button class="ctrl" type="button" id="empty-toggle">Пустая коллекция</button>
+    </div>
+
+    <div class="stage">
+      <div class="device">
+        <div class="skin phone" id="phone" data-dir="bubble">
+          <div class="ui">
+            <header class="appbar">
+              <h2 id="title">Коллекция</h2>
+              <div class="coins">1000<small>монет</small></div>
+            </header>
+            <div class="panels">
+              <section class="panel active" data-panel="collection">
+                <div class="chips" id="chips"></div>
+                <div class="grid" id="grid"></div>
+                <div class="empty">
+                  <div class="ghost-slot"></div>
+                  <h3 id="empty-title">В альбоме пусто</h3>
+                  <p id="empty-text">Откройте пакет — карты появятся здесь.</p>
+                  <button class="cta" type="button" id="empty-cta">Открыть пакет</button>
+                </div>
+              </section>
+              <section class="panel" data-panel="pack">
+                <div class="pack-closed">
+                  <img class="pack-art" id="pack-art" src="assets/pack-album.jpg" alt="Пак" />
+                  <button class="cta" type="button" id="open-pack">Открыть</button>
+                </div>
+                <div class="pack-open">
+                  <div id="hero" style="width:min(210px,80%)"></div>
+                  <div class="fan" id="fan"></div>
+                  <button class="cta ghost" type="button" id="replay">Открыть ещё раз</button>
+                </div>
+              </section>
+              <section class="panel" data-panel="team">
+                <div class="formation"><span>Схема</span><span>4-4-2</span></div>
+                <div class="pitch" id="pitch"></div>
+                <button class="cta" type="button" style="margin-top:12px">Сохранить состав</button>
+              </section>
+              <section class="panel" data-panel="profile">
+                <div class="profile-banner">
+                  <img id="profile-banner" src="assets/profile-album.jpg" alt="" />
+                  <div class="overlay">Локальный профиль</div>
+                </div>
+                <div class="tiles">
+                  <div class="tile"><b>1000</b><span>Монет</span></div>
+                  <div class="tile"><b>6</b><span>В коллекции</span></div>
+                  <div class="tile"><b>11</b><span>Получено карт</span></div>
+                  <div class="tile"><b>5</b><span>Дубликатов</span></div>
+                </div>
+                <p class="note">Коллекция заполнена на 18%</p>
+                <div class="progress"><i></i></div>
+                <div class="tile"><b>Матчей ещё не было</b><span>Победы появятся, когда история начнёт сохраняться.</span></div>
+              </section>
+              <div class="sheet" id="sheet">
+                <div class="sheet-body">
+                  <div id="sheet-card"></div>
+                  <p class="note">Крупный вид карты.</p>
+                  <button class="cta" type="button" id="sheet-close">Закрыть</button>
+                </div>
+              </div>
+            </div>
+            <nav class="tabbar" id="tabbar">
+              <button class="tab" type="button" data-screen="pack"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="8" width="16" height="11" rx="1"/><path d="M4 12h16M12 8v11M8 8c0-3 8-3 8 0"/></svg><span>Пакеты</span></button>
+              <button class="tab active" type="button" data-screen="collection"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="4" width="7" height="16"/><rect x="14" y="4" width="7" height="16"/></svg><span>Коллекция</span></button>
+              <button class="tab" type="button" data-screen="team"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="8" cy="8" r="2.2"/><circle cx="16" cy="8" r="2.2"/><path d="M4 18c.6-2.4 2.2-3.5 4-3.5S11.4 15.6 12 18M12 18c.6-2.4 2.2-3.5 4-3.5S19.4 15.6 20 18"/></svg><span>Команда</span></button>
+              <button class="tab" type="button" data-screen="profile"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="8" r="3"/><path d="M5 19c1.2-3 3.4-4.5 7-4.5S17.8 16 19 19"/></svg><span>Профиль</span></button>
+            </nav>
+          </div>
+        </div>
+      </div>
+      <aside class="side">
+        <h3 id="side-title">На что смотреть</h3>
+        <p id="side-text"></p>
+        <div class="legend" id="legend"></div>
+      </aside>
+    </div>
+  </div>
+  <script>
+    const SAMPLE = { name:"Алексей Смирнов", pos:"АТ", club:"Спартак", ovr:82, atk:88, def:70, spd:85, tec:83 };
+    const CARDS = [
+      { id:"ivanov", name:"Сергей Иванов", pos:"ЗЩ", club:"Зенит", rarity:"common", ovr:79, atk:70, def:90, spd:80, tec:75 },
+      { id:"smirnov", name:"Алексей Смирнов", pos:"АТ", club:"Спартак", rarity:"rare", ovr:82, atk:88, def:70, spd:85, tec:83 },
+      { id:"kozlov", name:"Михаил Козлов", pos:"АТ", club:"Динамо", rarity:"epic", ovr:82, atk:90, def:65, spd:87, tec:85 },
+      { id:"messi", name:"Лионель Месси", pos:"АТ", club:"ПСЖ", rarity:"legendary", ovr:91, atk:98, def:75, spd:92, tec:99 },
+      { id:"petrov", name:"Иван Петров", pos:"ПЗ", club:"ЦСКА", rarity:"rare", ovr:83, atk:82, def:78, spd:84, tec:89 },
+      { id:"sidorov", name:"Дмитрий Сидоров", pos:"ВР", club:"Локомотив", rarity:"common", ovr:74, atk:60, def:88, spd:70, tec:76 }
+    ];
+    const RARITY = [["all","Все"],["common","Обычные"],["rare","Редкие"],["epic","Эпические"],["legendary","Легендарные"]];
+    const LABEL = { common:"ОБЫЧН", rare:"РЕДК", epic:"ЭПИК", legendary:"ЛЕГЕН" };
+    const ASSETS = {
+      stadium: { player:"assets/player-stadium.jpg", pack:"assets/pack-stadium.jpg", field:"assets/field-stadium.jpg", profile:"assets/profile-stadium.jpg" },
+      album:   { player:"assets/player-album.jpg",   pack:"assets/pack-album.jpg",   field:"assets/field-album.jpg",   profile:"assets/profile-album.jpg" },
+      bubble:  { player:"assets/player-bubble.jpg",  pack:"assets/pack-bubble.jpg",  field:"assets/field-bubble.jpg",  profile:"assets/profile-bubble.jpg" },
+      comic:   { player:"assets/player-comic.jpg",   pack:"assets/pack-comic.jpg",   field:"assets/field-comic.jpg",   profile:"assets/profile-comic.jpg" },
+      clay:    { player:"assets/player-clay.jpg",    pack:"assets/pack-clay.jpg",    field:"assets/field-clay.jpg",    profile:"assets/profile-clay.jpg" }
+    };
+    const COPY = {
+      stadium: {
+        blurb:"Ночной эфир. Рейтинг в светящемся круге, редкость — лента-флажок. Пак, поле и шапка профиля — стадион ночью.",
+        title:"Прожектор",
+        text:"Смотрите четыре мини-экрана сверху: коллекция, пак, поле и профиль — все в одном стиле.",
+        emptyTitle:"В коллекции пусто", emptyText:"Откройте пакет — карта появится в свете прожектора.",
+        points:[["Карта","Круг OVR + лента редкости."],["Пак","Фольга под прожектором."],["Команда / профиль","Ночное поле и баннер стадиона."]]
+      },
+      album: {
+        blurb:"Бумажный альбом. Штамп рейтинга, наклонная бирка редкости. Пак — конверт, поле — чертёж на бумаге.",
+        title:"Клеевой альбом",
+        text:"Если нравится коллекционирование «наклеек» — этот дизайн про это.",
+        emptyTitle:"В альбоме пусто", emptyText:"Откройте пакет — наклейки лягут на лист.",
+        points:[["Карта","Стикер со штампом."],["Пак","Бумажный конверт с фольгой."],["Команда / профиль","Чертёж поля и бумажный баннер."]]
+      },
+      bubble: {
+        blurb:"Мягкая мультяшность. Толстые скругления, круглые таблетки-ярлыки, конфетные цвета. Всё приложение «пухлое».",
+        title:"Шарик",
+        text:"Новый вариант вместо неона. Дружелюбный, без «взрослого» киберспорта.",
+        emptyTitle:"Карт пока нет", emptyText:"Откройте пакет — появится первая мультяшная карта.",
+        points:[["Карта","Круглый OVR и pill-ярлык."],["Пак","Конфетная упаковка."],["Команда / профиль","Игрушечное поле и яркий баннер."]]
+      },
+      comic: {
+        blurb:"Комикс. Жирная обводка, жёлтый круг рейтинга, ярлык под углом. Пак взрывается, поле в поп-арте.",
+        title:"Комикс",
+        text:"Новый вариант вместо витрины. Громкий и очень «не про цвета ради цветов».",
+        emptyTitle:"Пустая страница", emptyText:"Откройте пакет — BAM! — карта на странице.",
+        points:[["Карта","Жёлтый круг + косой ярлык."],["Пак","Взрывная обложка."],["Команда / профиль","Комикс-поле и action-баннер."]]
+      },
+      clay: {
+        blurb:"Пластилин. Неровные «мягкие» формы, глина, игрушечные цвета. Поле и пак будто слеплены руками.",
+        title:"Пластилин",
+        text:"Новый вариант вместо автомата. Тёплая детская игрушечность.",
+        emptyTitle:"Коробочка пустая", emptyText:"Откройте пакет — слепим первую карту.",
+        points:[["Карта","Мягкий овал OVR + глина-ярлык."],["Пак","Пластилиновая упаковка."],["Команда / профиль","Игрушечное поле и глиняный баннер."]]
+      }
+    };
+    const SLOTS = [
+      { pos:"АТ", top:"14%", left:"36%", id:"messi" },
+      { pos:"АТ", top:"14%", left:"68%", id:null },
+      { pos:"ПЗ", top:"38%", left:"16%", id:"petrov" },
+      { pos:"ПЗ", top:"38%", left:"40%", id:"smirnov" },
+      { pos:"ПЗ", top:"38%", left:"64%", id:null },
+      { pos:"ПЗ", top:"38%", left:"86%", id:"kozlov" },
+      { pos:"ЗЩ", top:"64%", left:"16%", id:"ivanov" },
+      { pos:"ЗЩ", top:"64%", left:"40%", id:null },
+      { pos:"ЗЩ", top:"64%", left:"64%", id:null },
+      { pos:"ЗЩ", top:"64%", left:"86%", id:null },
+      { pos:"ВР", top:"86%", left:"50%", id:"sidorov" }
+    ];
+    const TITLES = { collection:"Коллекция", pack:"Пакеты", team:"Команда", profile:"Профиль" };
+    const state = { dir:"bubble", screen:"collection", empty:false, filter:"all", packOpen:false };
+
+    function nameClass(name) {
+      const len = String(name || "").length;
+      if (len > 18) return "name is-longer";
+      if (len > 14) return "name is-long";
+      return "name";
+    }
+
+    function cardHTML(card, extra) {
+      const stats = [["АТК",card.atk],["ЗАЩ",card.def],["СКР",card.spd],["ТЕХ",card.tec]];
+      const photo = ASSETS[state.dir].player;
+      return `<button type="button" class="pcard ${card.rarity} ${extra||""}" data-id="${card.id||""}">
+        <div class="photo-wrap">
+          <img class="photo" src="${photo}" alt="" />
+          <span class="ovr-ring">${card.ovr}</span>
+          <span class="badge">${LABEL[card.rarity]}</span>
+        </div>
+        <div class="body">
+          <div class="${nameClass(card.name)}" title="${card.name}">${card.name}</div>
+          <div class="meta">${card.pos}</div>
+          <div class="stats">${stats.map(([k,v]) => `<div class="stat">${k}<i class="bar"><i style="--w:${v}%"></i></i><b>${v}</b></div>`).join("")}</div>
+        </div>
+      </button>`;
+    }
+
+    function renderQuartet() {
+      document.getElementById("quartet").innerHTML = ["common","rare","epic","legendary"]
+        .map((r) => cardHTML({ ...SAMPLE, rarity:r, id:"s-"+r })).join("");
+    }
+    function renderGrid() {
+      const cards = CARDS.filter((c) => state.filter === "all" || c.rarity === state.filter);
+      document.getElementById("grid").innerHTML = cards.map((c) => cardHTML(c)).join("");
+    }
+    function renderChips() {
+      document.getElementById("chips").innerHTML = RARITY.map(([id,label]) =>
+        `<button class="chip ${state.filter===id?"active":""}" type="button" data-filter="${id}">${label}</button>`
+      ).join("");
+    }
+    function renderPack() {
+      const hero = CARDS.find((c) => c.rarity === "legendary");
+      const rest = CARDS.filter((c) => c !== hero).slice(0,4);
+      document.getElementById("hero").innerHTML = cardHTML(hero, "hero");
+      document.getElementById("fan").innerHTML = rest.map((c) => cardHTML(c)).join("");
+      document.getElementById("pack-art").src = ASSETS[state.dir].pack;
+    }
+    function renderPitch() {
+      const pitch = document.getElementById("pitch");
+      pitch.style.backgroundImage = `url("${ASSETS[state.dir].field}")`;
+      pitch.querySelectorAll(".slot").forEach((n) => n.remove());
+      const byId = Object.fromEntries(CARDS.map((c) => [c.id, c]));
+      pitch.insertAdjacentHTML("beforeend", SLOTS.map((slot) => {
+        const card = slot.id ? byId[slot.id] : null;
+        if (!card) return `<button class="slot" type="button" style="top:${slot.top};left:${slot.left}">${slot.pos}</button>`;
+        return `<button class="slot filled ${card.rarity}" type="button" style="top:${slot.top};left:${slot.left}" data-id="${card.id}">${card.ovr}<small>${slot.pos}</small></button>`;
+      }).join(""));
+    }
+    function renderMinis() {
+      const a = ASSETS[state.dir];
+      document.getElementById("mini-collection").innerHTML =
+        `<div class="mini-grid">${CARDS.slice(0,4).map((c) => cardHTML(c)).join("")}</div>`;
+      document.getElementById("mini-pack").innerHTML = `<img src="${a.pack}" alt="" />`;
+      document.getElementById("mini-team").innerHTML = `<img src="${a.field}" alt="" />`;
+      document.getElementById("mini-profile").innerHTML =
+        `<div class="pbanner"><img src="${a.profile}" alt="" /></div>
+         <div class="ptiles">
+           <div class="ptile"><b>1000</b><span>Монет</span></div>
+           <div class="ptile"><b>6</b><span>Карт</span></div>
+           <div class="ptile"><b>11</b><span>Получено</span></div>
+           <div class="ptile"><b>5</b><span>Дубликатов</span></div>
+         </div>`;
+      document.getElementById("profile-banner").src = a.profile;
+    }
+    function applyCopy() {
+      const copy = COPY[state.dir];
+      document.getElementById("blurb").textContent = copy.blurb;
+      document.getElementById("side-title").textContent = copy.title;
+      document.getElementById("side-text").textContent = copy.text;
+      document.getElementById("empty-title").textContent = copy.emptyTitle;
+      document.getElementById("empty-text").textContent = copy.emptyText;
+      document.getElementById("legend").innerHTML = copy.points.map(([n,t]) => `<div><b>${n}</b>${t}</div>`).join("");
+    }
+    function applyScreen() {
+      document.querySelectorAll(".panel").forEach((p) => p.classList.toggle("active", p.dataset.panel === state.screen));
+      document.querySelectorAll("[data-screen]").forEach((b) => b.classList.toggle("active", b.dataset.screen === state.screen));
+      document.querySelectorAll(".mini").forEach((m) => m.classList.toggle("active", m.dataset.screen === state.screen));
+      document.getElementById("title").textContent = TITLES[state.screen];
+      document.querySelector('[data-panel="collection"]').classList.toggle("empty-on", state.empty);
+      document.getElementById("empty-toggle").classList.toggle("active", state.empty);
+      document.getElementById("empty-toggle").textContent = state.empty ? "Показать карты" : "Пустая коллекция";
+      document.querySelector('[data-panel="pack"]').classList.toggle("is-open", state.packOpen);
+    }
+    function setDir(dir) {
+      state.dir = dir;
+      document.querySelectorAll(".skin").forEach((n) => { n.dataset.dir = dir; });
+      document.querySelectorAll(".pick").forEach((b) => b.classList.toggle("active", b.dataset.pick === dir));
+      applyCopy();
+      renderQuartet();
+      renderGrid();
+      renderPack();
+      renderPitch();
+      renderMinis();
+    }
+    function setScreen(screen) {
+      state.screen = screen;
+      if (screen === "pack") state.packOpen = false;
+      applyScreen();
+    }
+
+    document.getElementById("picks").addEventListener("click", (e) => {
+      const b = e.target.closest(".pick"); if (b) setDir(b.dataset.pick);
+    });
+    document.getElementById("screens-row").addEventListener("click", (e) => {
+      const m = e.target.closest(".mini"); if (m) setScreen(m.dataset.screen);
+    });
+    document.getElementById("screen-controls").addEventListener("click", (e) => {
+      const b = e.target.closest("[data-screen]"); if (b) setScreen(b.dataset.screen);
+    });
+    document.getElementById("tabbar").addEventListener("click", (e) => {
+      const b = e.target.closest("[data-screen]"); if (b) setScreen(b.dataset.screen);
+    });
+    document.getElementById("chips").addEventListener("click", (e) => {
+      const b = e.target.closest("[data-filter]"); if (!b) return;
+      state.filter = b.dataset.filter; renderChips(); renderGrid();
+    });
+    document.getElementById("empty-toggle").addEventListener("click", () => {
+      state.empty = !state.empty; setScreen("collection");
+    });
+    document.getElementById("empty-cta").addEventListener("click", () => {
+      state.empty = false; state.packOpen = false; setScreen("pack");
+    });
+    document.getElementById("open-pack").addEventListener("click", () => {
+      state.packOpen = true; applyScreen();
+    });
+    document.getElementById("replay").addEventListener("click", () => {
+      const panel = document.querySelector('[data-panel="pack"]');
+      panel.classList.remove("is-open"); void panel.offsetWidth;
+      state.packOpen = true; panel.classList.add("is-open");
+    });
+    document.getElementById("grid").addEventListener("click", (e) => {
+      const card = e.target.closest(".pcard"); if (!card) return;
+      document.getElementById("sheet-card").innerHTML = card.outerHTML;
+      document.getElementById("sheet").classList.add("open");
+    });
+    document.getElementById("sheet-close").addEventListener("click", () => {
+      document.getElementById("sheet").classList.remove("open");
+    });
+
+    renderChips();
+    setDir("bubble");
+    applyScreen();
+  </script>
+</body>
+</html>

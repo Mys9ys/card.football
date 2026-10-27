@@ -168,6 +168,11 @@ const PackOpeningScreen = () => {
       <View style={styles.header}>
         <Text style={styles.title}>Открытие пакетов</Text>
         <Text style={styles.subtitle}>Получайте новые карты для своей команды</Text>
+        <Image
+          source={require('../assets/theme/pack-bubble.jpg')}
+          style={styles.packHero}
+          resizeMode="cover"
+        />
       </View>
       
       {/* Статистика коллекции */}
@@ -261,24 +266,24 @@ const PackOpeningScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: '#DFF6FF',
   },
   header: {
-    backgroundColor: '#0066cc',
+    backgroundColor: '#9BE7FF',
     padding: 20,
     paddingTop: 40,
-    borderBottomLeftRadius: 30,
-    borderBottomRightRadius: 30,
+    borderBottomLeftRadius: 28,
+    borderBottomRightRadius: 28,
   },
   title: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: 'white',
+    color: '#2A2150',
     textAlign: 'center',
   },
   subtitle: {
     fontSize: 16,
-    color: 'rgba(255, 255, 255, 0.8)',
+    color: '#6A6290',
     textAlign: 'center',
     marginTop: 5,
   },
@@ -290,11 +295,11 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: 'bold',
     margin: 10,
-    color: '#333',
+    color: '#2A2150',
   },
   modalContainer: {
     flex: 1,
-    backgroundColor: 'white',
+    backgroundColor: '#FFF7FB',
     padding: 20,
     justifyContent: 'center',
   },
@@ -338,12 +343,12 @@ const styles = StyleSheet.create({
   },
   cardTeam: {
     fontSize: 14,
-    color: '#0066cc',
+    color: '#FF6B8A',
     marginTop: 3,
   },
   duplicateText: {
     fontSize: 14,
-    color: '#FF6347',
+    color: '#FF6B8A',
     marginTop: 5,
     fontWeight: 'bold',
   },
@@ -352,14 +357,15 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     textAlign: 'center',
     marginTop: 20,
-    color: '#FFD700',
+    color: '#2A2150',
   },
   closeButton: {
-    backgroundColor: '#0066cc',
+    backgroundColor: '#FF6B8A',
     padding: 15,
-    borderRadius: 10,
+    borderRadius: 999,
     marginTop: 20,
     alignItems: 'center',
+    minHeight: 44,
   },
   closeButtonText: {
     color: 'white',
@@ -368,22 +374,32 @@ const styles = StyleSheet.create({
   },
   openingOverlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    backgroundColor: 'rgba(42, 33, 80, 0.55)',
     justifyContent: 'center',
     alignItems: 'center',
     zIndex: 1000,
   },
   openingContainer: {
-    backgroundColor: 'white',
+    backgroundColor: '#FFF7FB',
     padding: 30,
-    borderRadius: 20,
+    borderRadius: 24,
     alignItems: 'center',
   },
   openingText: {
     fontSize: 20,
     fontWeight: 'bold',
     marginBottom: 20,
-    color: '#333',
+    color: '#2A2150',
+  },
+  packHero: {
+    width: 160,
+    height: 210,
+    alignSelf: 'center',
+    marginTop: 12,
+    marginBottom: 4,
+    borderRadius: 24,
+    borderWidth: 3,
+    borderColor: '#FF6B8A',
   },
   openingGif: {
     width: 100,

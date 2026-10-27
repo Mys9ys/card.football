@@ -306,19 +306,19 @@ import { TextInput } from 'react-native';
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: '#DFF6FF',
   },
   header: {
-    backgroundColor: '#0066cc',
+    backgroundColor: '#9BE7FF',
     padding: 20,
     paddingTop: 40,
-    borderBottomLeftRadius: 30,
-    borderBottomRightRadius: 30,
+    borderBottomLeftRadius: 28,
+    borderBottomRightRadius: 28,
   },
   title: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: 'white',
+    color: '#2A2150',
     textAlign: 'center',
   },
   statsHeader: {
@@ -327,18 +327,18 @@ const styles = StyleSheet.create({
   },
   statsText: {
     fontSize: 14,
-    color: 'rgba(255, 255, 255, 0.8)',
+    color: '#6A6290',
     marginVertical: 2,
   },
   currencyText: {
-    color: '#FFD700',
+    color: '#FF6B8A',
     fontWeight: 'bold',
   },
   filtersContainer: {
     padding: 10,
-    backgroundColor: 'white',
+    backgroundColor: '#FFF7FB',
     borderBottomWidth: 1,
-    borderBottomColor: '#eee',
+    borderBottomColor: '#B9E8F7',
   },
   filterRow: {
     flexDirection: 'row',
@@ -346,39 +346,35 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   filterButton: {
-    backgroundColor: '#f0f0f0',
+    backgroundColor: '#E5F7FF',
     paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 20,
+    paddingVertical: 8,
+    borderRadius: 999,
     marginHorizontal: 5,
+    minHeight: 36,
   },
   filterButtonActive: {
-    backgroundColor: '#0066cc',
+    backgroundColor: '#FF6B8A',
   },
   filterButtonText: {
-    color: '#333',
+    color: '#2A2150',
     fontSize: 12,
+    fontWeight: '700',
   },
   filterButtonTextActive: {
     color: 'white',
   },
-  searchInput: {
-    backgroundColor: '#f0f0f0',
-    borderRadius: 20,
-    paddingHorizontal: 15,
-    paddingVertical: 10,
-    fontSize: 14,
-  },
   searchContainer: {
     padding: 10,
-    backgroundColor: 'white',
+    backgroundColor: '#FFF7FB',
   },
   searchInput: {
-    backgroundColor: '#f0f0f0',
-    borderRadius: 20,
+    backgroundColor: '#E5F7FF',
+    borderRadius: 999,
     paddingHorizontal: 15,
     paddingVertical: 10,
     fontSize: 14,
+    color: '#2A2150',
   },
   listContainer: {
     padding: 10,
@@ -391,18 +387,19 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: 16,
-    color: '#666',
+    color: '#6A6290',
     textAlign: 'center',
   },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    backgroundColor: '#DFF6FF',
   },
   loadingText: {
     marginTop: 10,
     fontSize: 16,
-    color: '#666',
+    color: '#6A6290',
   },
 });
 

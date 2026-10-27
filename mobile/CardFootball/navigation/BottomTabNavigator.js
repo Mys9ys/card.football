@@ -1,10 +1,10 @@
-// Навигатор с нижними вкладками
+// Bottom tabs — Bubble theme
 
 import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import Icon from 'react-native-vector-icons/Ionicons';
+import { BubbleTheme } from '../theme/bubble';
 
-// Экраны
 import PackOpeningScreen from '../screens/PackOpeningScreen';
 import CollectionScreen from '../screens/CollectionScreen';
 import TeamFormationScreen from '../screens/TeamFormationScreen';
@@ -32,19 +32,20 @@ const BottomTabNavigator = () => {
 
           return <Icon name={iconName} size={size} color={color} />;
         },
-        tabBarActiveTintColor: '#0066cc',
-        tabBarInactiveTintColor: 'gray',
+        tabBarActiveTintColor: BubbleTheme.tabActive,
+        tabBarInactiveTintColor: BubbleTheme.muted,
         tabBarStyle: {
-          backgroundColor: 'white',
+          backgroundColor: BubbleTheme.bar,
           borderTopWidth: 1,
-          borderTopColor: '#eee',
+          borderTopColor: BubbleTheme.line,
         },
         headerStyle: {
-          backgroundColor: '#0066cc',
+          backgroundColor: BubbleTheme.bar,
         },
-        headerTintColor: '#fff',
+        headerTintColor: BubbleTheme.text,
         headerTitleStyle: {
           fontWeight: 'bold',
+          color: BubbleTheme.text,
         },
       })}
     >

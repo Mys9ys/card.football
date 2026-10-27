@@ -1,20 +1,28 @@
-// Компонент для отображения карточки игрока
+// Player collectible card — Bubble («Шарик») direction
 
-import React, { useMemo } from 'react';
+import React, { useMemo, useRef } from 'react';
 import { View, Text, Image, StyleSheet, TouchableOpacity, Animated } from 'react-native';
+import { BubbleTheme, RARITY_LABELS } from '../theme/bubble';
+
+const DEFAULT_PORTRAIT = require('../assets/theme/player-bubble.jpg');
+
+const POSITION_LABELS = {
+  attacker: 'АТ',
+  midfielder: 'ПЗ',
+  defender: 'ЗЩ',
+  goalkeeper: 'ВР',
+};
 
 const CardItem = ({ card, onPress }) => {
-  // Анимация масштабирования при нажатии
-  const scaleValue = new Animated.Value(1);
-  
-  // Обработка нажатия с анимацией
+  const scaleValue = useRef(new Animated.Value(1)).current;
+
   const handlePressIn = () => {
     Animated.spring(scaleValue, {
-      toValue: 0.95,
+      toValue: 0.97,
       useNativeDriver: true,
     }).start();
   };
-  
+
   const handlePressOut = () => {
     Animated.spring(scaleValue, {
       toValue: 1,
@@ -23,323 +31,240 @@ const CardItem = ({ card, onPress }) => {
       useNativeDriver: true,
     }).start();
   };
-  
-  // Определение цветовых стилей в зависимости от редкости карты
-  const cardColors = useMemo(() => {
-    const colors = {
-      legendary: {
-        border: '#FFD700',
-        background: '#FFF8DC',
-        shadow: '#d4af37',
-        text: '#8B4513',
-        badge: '#FFD700'
-      },
-      epic: {
-        border: '#8A2BE2',
-        background: '#F0E6FF',
-        shadow: '#6a1cb2',
-        text: '#4B0082',
-        badge: '#8A2BE2'
-      },
-      rare: {
-        border: '#1E90FF',
-        background: '#E6F3FF',
-        shadow: '#104e8b',
-        text: '#0066cc',
-        badge: '#1E90FF'
-      },
-      common: {
-        border: '#CCCCCC',
-        background: '#F8F8F8',
-        shadow: '#a9a9a9',
-        text: '#333',
-        badge: '#CCCCCC'
-      }
-    };
-    
-    return colors[card.rarity] || colors.common;
+
+  const colors = useMemo(() => {
+    return BubbleTheme.rarity[card.rarity] || BubbleTheme.rarity.common;
   }, [card.rarity]);
 
-  // Определение названия позиции
-  const getPositionName = () => {
-    switch (card.position) {
-      case 'attacker':
-        return 'Нападающий';
-      case 'midfielder':
-        return 'Полузащитник';
-      case 'defender':
-        return 'Защитник';
-      case 'goalkeeper':
-        return 'Вратарь';
-      default:
-        return 'Позиция';
-    }
-  };
-
-  // Получение иконки позиции
-  const getPositionIcon = () => {
-    switch (card.position) {
-      case 'attacker':
-        return '⚡';
-      case 'midfielder':
-        return '🔄';
-      case 'defender':
-        return '🛡️';
-      case 'goalkeeper':
-        return '🧤';
-      default:
-        return '⚽';
-    }
-  };
-
-  // Получение иконки редкости
-  const getRarityIcon = () => {
-    switch (card.rarity) {
-      case 'legendary':
-        return '⭐⭐⭐';
-      case 'epic':
-        return '⭐⭐';
-      case 'rare':
-        return '⭐';
-      default:
-        return '🔸';
-    }
-  };
-
-  // Рассчет общего рейтинга
-  const getOverallRating = () => {
-    const total = card.attack + card.defense + card.speed + card.technique;
+  const overall = useMemo(() => {
+    const total =
+      (card.attack || 0) +
+      (card.defense || 0) +
+      (card.speed || 0) +
+      (card.technique || 0);
     return Math.round(total / 4);
-  };
+  }, [card]);
 
-  // Получение стиля для значка редкости
-  const getRarityBadgeStyle = useMemo(() => {
-    return {
-      backgroundColor: cardColors.badge,
-      opacity: 0.2
-    };
-  }, [cardColors]);
+  const positionLabel = POSITION_LABELS[card.position] || '—';
+  const rarityLabel = RARITY_LABELS[card.rarity] || RARITY_LABELS.common;
+
+  const imageSource = card.imageLocal
+    ? card.imageLocal
+    : card.image && typeof card.image === 'number'
+      ? card.image
+      : DEFAULT_PORTRAIT;
 
   return (
-    <Animated.View style={{ transform: [{ scale: scaleValue }] }}>
-      <TouchableOpacity 
+    <Animated.View style={{ transform: [{ scale: scaleValue }], flex: 1 }}>
+      <TouchableOpacity
         style={[
-          styles.container, 
-          { 
-            borderColor: cardColors.border,
-            backgroundColor: cardColors.background,
-            shadowColor: cardColors.shadow
-          }
-        ]} 
+          styles.card,
+          {
+            borderColor: colors.border,
+            shadowColor: colors.border,
+          },
+          card.rarity === 'legendary' && styles.cardLegendary,
+        ]}
         onPress={onPress}
         onPressIn={handlePressIn}
-        onPressOut={handlePressOut}>
-        <View style={styles.cardContent}>
-        <View style={[styles.content, { backgroundColor: 'transparent' }]}>
-        <View style={styles.header}>
-          <Text style={styles.name}>{card.name}</Text>
-          <View style={[styles.rarityBadge, getRarityBadgeStyle]}>
-              <Text style={styles.rarityText}>{getRarityIcon()}</Text>
-            </View>
-        </View>
-        
-        <View style={styles.imageContainer}>
-          {card.image ? (
-            <Image 
-              source={{uri: card.image}} 
-              style={styles.image} 
-              defaultSource={require('../assets/images/default_player.png')}
-            />
-          ) : (
-            <View style={styles.placeholder}>
-              <Text style={styles.placeholderText}>Изображение</Text>
-            </View>
-          )}
-        </View>
-        
-        <View style={styles.infoContainer}>
-          <View style={styles.teamContainer}>
-            <Text style={styles.team}>{card.team}</Text>
-            <Text style={styles.country}>{card.country}</Text>
+        onPressOut={handlePressOut}
+        activeOpacity={0.95}
+        accessibilityRole="button"
+      >
+        <View style={[styles.photoWrap, { borderBottomColor: colors.border }]}>
+          <Image
+            source={imageSource}
+            style={styles.photo}
+            resizeMode="cover"
+          />
+          <View style={[styles.ovrRing, { borderColor: colors.border }]}>
+            <Text style={styles.ovrText}>{overall}</Text>
           </View>
-          
-          <View style={styles.statsContainer}>
-            <View style={styles.statRow}>
-              <Text style={styles.statLabel}>Атака</Text>
-              <Text style={styles.statValue}>{card.attack}</Text>
-            </View>
-            <View style={styles.statRow}>
-              <Text style={styles.statLabel}>Защита</Text>
-              <Text style={styles.statValue}>{card.defense}</Text>
-            </View>
-            <View style={styles.statRow}>
-              <Text style={styles.statLabel}>Скорость</Text>
-              <Text style={styles.statValue}>{card.speed}</Text>
-            </View>
-            <View style={styles.statRow}>
-              <Text style={styles.statLabel}>Техника</Text>
-              <Text style={styles.statValue}>{card.technique}</Text>
-            </View>
+          <View
+            style={[
+              styles.badge,
+              {
+                backgroundColor: colors.badge,
+                borderColor: colors.border,
+              },
+            ]}
+          >
+            <Text style={[styles.badgeText, { color: colors.badgeText }]}>
+              {rarityLabel}
+            </Text>
           </View>
         </View>
-        
-        <View style={styles.footer}>
-          <Text style={styles.position}>{getPositionName()}</Text>
-          {card.abilities && card.abilities.length > 0 && (
-            <View style={styles.abilitiesContainer}>
-              {card.abilities.slice(0, 2).map((ability, index) => (
-                <Text key={index} style={styles.ability}>{ability}</Text>
-              ))}
-            </View>
-          )}
+
+        <View style={styles.body}>
+          <Text
+            style={[
+              styles.name,
+              (card.name || '').length > 14 && styles.nameLong,
+              (card.name || '').length > 18 && styles.nameLonger,
+            ]}
+            numberOfLines={1}
+            adjustsFontSizeToFit
+            minimumFontScale={0.72}
+          >
+            {card.name}
+          </Text>
+          <Text style={styles.meta} numberOfLines={1}>
+            {positionLabel}
+          </Text>
+
+          <View style={styles.stats}>
+            <StatRow label="АТК" value={card.attack} />
+            <StatRow label="ЗАЩ" value={card.defense} />
+            <StatRow label="СКР" value={card.speed} />
+            <StatRow label="ТЕХ" value={card.technique} />
+          </View>
         </View>
-      </View>
-      </View>
       </TouchableOpacity>
     </Animated.View>
   );
 };
 
+const StatRow = ({ label, value }) => {
+  const width = Math.min(100, Math.max(0, Number(value) || 0));
+  return (
+    <View style={styles.stat}>
+      <Text style={styles.statLabel}>{label}</Text>
+      <View style={styles.barTrack}>
+        <View style={[styles.barFill, { width: `${width}%` }]} />
+      </View>
+      <Text style={styles.statValue}>{value ?? 0}</Text>
+    </View>
+  );
+};
+
 const styles = StyleSheet.create({
-cardContent: {
-    backgroundColor: 'white',
-    borderRadius: 15,
-    overflow: 'hidden'
-},
-  rarityBadge: {
-      width: 40,
-      height: 40,
-      borderRadius: 20,
-      justifyContent: 'center',
-      alignItems: 'center'
-  },
-      rarityText: {
-      fontSize: 12,
-      fontWeight: 'bold',
-      color: '#8B4513'
-  },
-  container: {
+  card: {
+    backgroundColor: BubbleTheme.card,
     borderWidth: 3,
-    borderRadius: 15,
-    margin: 10,
+    borderRadius: 24,
+    margin: 6,
+    overflow: 'visible',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.18,
+    shadowRadius: 0,
+    elevation: 4,
+    height: 262,
+    minHeight: 262,
+    maxHeight: 262,
+  },
+  cardLegendary: {
+    shadowOpacity: 0.28,
+  },
+  photoWrap: {
+    height: 142,
+    minHeight: 142,
+    maxHeight: 142,
+    flexShrink: 0,
+    borderBottomWidth: 3,
     overflow: 'hidden',
-    backgroundColor: 'white',
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-    elevation: 5,
+    borderTopLeftRadius: 21,
+    borderTopRightRadius: 21,
+    backgroundColor: '#CFF0FF',
   },
-  content: {
-    padding: 15,
+  photo: {
+    width: '100%',
+    height: 142,
   },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+  ovrRing: {
+    position: 'absolute',
+    left: 10,
+    bottom: -12,
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 4,
     alignItems: 'center',
-    marginBottom: 10,
+    justifyContent: 'center',
+    zIndex: 2,
+  },
+  ovrText: {
+    fontSize: 16,
+    fontWeight: '800',
+    color: BubbleTheme.text,
+  },
+  badge: {
+    position: 'absolute',
+    top: 10,
+    right: 10,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 999,
+    borderWidth: 2,
+    zIndex: 2,
+  },
+  badgeText: {
+    fontSize: 10,
+    fontWeight: '900',
+    letterSpacing: 0.5,
+  },
+  body: {
+    paddingTop: 14,
+    paddingHorizontal: 12,
+    paddingBottom: 8,
   },
   name: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#8B4513',
-    flex: 1,
+    fontSize: 15,
+    fontWeight: '800',
+    color: BubbleTheme.text,
+    lineHeight: 18,
+    height: 18,
   },
-  rarity: {
-    fontSize: 14,
-    fontWeight: 'bold',
-    textTransform: 'uppercase',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 10,
+  nameLong: {
+    fontSize: 13,
   },
-  imageContainer: {
-    alignItems: 'center',
-    marginBottom: 10,
+  nameLonger: {
+    fontSize: 11.5,
   },
-  image: {
-    width: 120,
-    height: 160,
-    borderRadius: 10,
+  meta: {
+    marginTop: 2,
+    fontSize: 11,
+    fontWeight: '700',
+    color: BubbleTheme.muted,
   },
-  placeholder: {
-    width: 120,
-    height: 160,
-    backgroundColor: '#eee',
-    borderRadius: 10,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  placeholderText: {
-    color: '#999',
-    fontSize: 12,
-  },
-  infoContainer: {
+  stats: {
+    marginTop: 8,
     flexDirection: 'row',
+    flexWrap: 'wrap',
     justifyContent: 'space-between',
   },
-  teamContainer: {
-    flex: 1,
-  },
-  team: {
-    fontSize: 14,
-    fontWeight: 'bold',
-    color: '#333',
-    marginBottom: 3,
-  },
-  country: {
-    fontSize: 12,
-    color: '#666',
-  },
-  statsContainer: {
-    flex: 1,
-  },
-  statRow: {
+  stat: {
+    width: '48%',
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 3,
+    alignItems: 'center',
+    marginBottom: 4,
   },
   statLabel: {
-    fontSize: 12,
-    color: '#666',
-    width: 50,
+    width: 28,
+    fontSize: 10,
+    fontWeight: '700',
+    color: BubbleTheme.muted,
+  },
+  barTrack: {
+    flex: 1,
+    height: 4,
+    borderRadius: 99,
+    backgroundColor: BubbleTheme.track,
+    overflow: 'hidden',
+    marginHorizontal: 4,
+  },
+  barFill: {
+    height: '100%',
+    backgroundColor: BubbleTheme.barFill,
+    borderRadius: 99,
   },
   statValue: {
-    fontSize: 12,
-    fontWeight: 'bold',
-    color: '#333',
-    width: 30,
+    width: 22,
+    fontSize: 11,
+    fontWeight: '800',
+    color: BubbleTheme.text,
     textAlign: 'right',
   },
-  footer: {
-    marginTop: 10,
-    paddingTop: 10,
-    borderTopWidth: 1,
-    borderTopColor: '#eee',
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  position: {
-    fontSize: 14,
-    fontWeight: 'bold',
-    color: '#333',
-  },
-  abilitiesContainer: {
-    flexDirection: 'row',
-  },
-  ability: {
-    fontSize: 12,
-    color: '#0066cc',
-    marginLeft: 10,
-  },
 });
-
-// Установка цветов для разных редкостей
-// Удалены прямые манипуляции со стилями, которые вызывали ошибку
-// Вместо этого цвета задаются через объект стилей в render
 
 export default CardItem;
