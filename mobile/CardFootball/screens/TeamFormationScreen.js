@@ -83,7 +83,7 @@ const TeamFormationScreen = () => {
             stamina: 50,
             rarity: 'common',
             abilities: ['formation_4-4-2'],
-            image: require('../assets/images/default_tournament.png'),
+            image: require('../assets/theme/player-bubble.jpg'),
             description: 'Классическая сбалансированная схема'
           }]);
           
@@ -114,7 +114,7 @@ const TeamFormationScreen = () => {
               stamina: 78,
               rarity: 'rare',
               abilities: ['dribbling', 'long_shot'],
-              image: require('../assets/images/default_tournament.png'),
+              image: require('../assets/theme/player-bubble.jpg'),
               description: 'Тестовая карта нападающего для проверки функциональности'
             },
             {
@@ -130,7 +130,7 @@ const TeamFormationScreen = () => {
               stamina: 85,
               rarity: 'rare',
               abilities: ['cross', 'support'],
-              image: require('../assets/images/default_tournament.png'),
+              image: require('../assets/theme/player-bubble.jpg'),
               description: 'Тестовая карта полузащитника для проверки функциональности'
             },
             {
@@ -146,7 +146,7 @@ const TeamFormationScreen = () => {
               stamina: 80,
               rarity: 'rare',
               abilities: ['blocking', 'tackle'],
-              image: require('../assets/images/default_tournament.png'),
+              image: require('../assets/theme/player-bubble.jpg'),
               description: 'Тестовая карта защитника для проверки функциональности'
             },
             {
@@ -162,7 +162,7 @@ const TeamFormationScreen = () => {
               stamina: 75,
               rarity: 'rare',
               abilities: ['blocking', 'clearance'],
-              image: require('../assets/images/default_tournament.png'),
+              image: require('../assets/theme/player-bubble.jpg'),
               description: 'Тестовая карта вратаря для проверки функциональности'
             }
           ];

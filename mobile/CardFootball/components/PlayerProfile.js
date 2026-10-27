@@ -67,7 +67,7 @@ const PlayerProfile = ({ player, onPress }) => {
           <Image 
             source={{uri: player.image}} 
             style={styles.image} 
-            defaultSource={require('../assets/images/default_player.png')}
+            defaultSource={require('../assets/theme/player-bubble.jpg')}
           />
         ) : (
           <View style={styles.placeholder}>

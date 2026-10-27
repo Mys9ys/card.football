@@ -68,7 +68,7 @@ const TournamentCard = ({ tournament, onPress }) => {
         <Image 
           source={{uri: tournament.image}} 
           style={styles.image} 
-          defaultSource={require('../assets/images/default_tournament.png')}
+          defaultSource={require('../assets/theme/pack-bubble.jpg')}
         />
       )}
       
