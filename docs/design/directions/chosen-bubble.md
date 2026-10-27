@@ -50,3 +50,10 @@
 ## Промпты картинок
 
 См. `image-prompts.md` — канон для генерации новых игроков и паков.
+
+Пока в клиенте один дефолт `assets/theme/player-bubble.jpg`. Разные причёски/амплуа — через пайплайн Content по промптам; в `player_cards` позже поле `imageLocal` / ассет на карту.
+
+## Polish (CF-110)
+
+- Коллекция: empty CTA, error retry, чипы ≥ 44pt, токены Bubble.
+- Паки / матч: добить PackCard и MatchScreen (ещё местами legacy blue) — см. `docs/design/packs.md`, `match.md`.

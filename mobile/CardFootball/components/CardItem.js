@@ -110,6 +110,7 @@ const CardItem = ({ card, onPress }) => {
           </Text>
           <Text style={styles.meta} numberOfLines={1}>
             {positionLabel}
+            {card.level > 0 ? ` · Lv.${card.level}` : ''}
           </Text>
 
           <View style={styles.stats}>

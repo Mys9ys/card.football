@@ -86,7 +86,7 @@ const PLAYER_CARDS = [
   },
   {
     id: 'p006',
-    name: 'Н'Голо Канте',
+    name: "Н'Голо Канте",
     position: 'midfielder',
     team: 'Al-Ittihad',
     country: 'France',

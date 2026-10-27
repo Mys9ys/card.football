@@ -1,14 +1,27 @@
 // Экран коллекции карт
 
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, Alert, ActivityIndicator } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  FlatList,
+  TouchableOpacity,
+  Alert,
+  ActivityIndicator,
+  TextInput,
+} from 'react-native';
+import { useNavigation } from '@react-navigation/native';
 import { PackService } from '../services/PackService';
 import CardItem from '../components/CardItem';
+import { BubbleTheme } from '../theme/bubble';
 
 const CollectionScreen = () => {
+  const navigation = useNavigation();
   const [cards, setCards] = useState([]);
   const [filteredCards, setFilteredCards] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(null);
   
   // Фильтры
   const [filters, setFilters] = useState({
@@ -33,48 +46,38 @@ const CollectionScreen = () => {
   const loadCollection = async () => {
     try {
       setLoading(true);
-      
-      // Получение данных из сервиса
+      setLoadError(null);
+
       const collectionResult = PackService.getPlayerCollection();
+      if (!collectionResult || collectionResult.success === false) {
+        throw new Error(collectionResult?.error || 'collection_failed');
+      }
+
       const completionResult = PackService.getCollectionCompletion();
       const statsByRarityResult = PackService.getCollectionStatsByRarity();
       const statsByPositionResult = PackService.getCollectionStatsByPosition();
       const currencyResult = PackService.getPlayerCurrency();
-      
-      // Получение всех карт из коллекции
+
       const allCardsRaw = require('../game_logic/player_cards');
       const allCards = Array.isArray(allCardsRaw) ? allCardsRaw : [];
       const collectionCardIds = collectionResult.collection?.cards || [];
-      
-      console.log('All available cards:', allCards);
-      console.log('Collection card IDs:', collectionCardIds);
-      
-      // Выводим информацию о тестовых картах
-      const testCards = allCards.filter(card => card.id.startsWith('test_'));
-      console.log('Test cards in allCards:', testCards);
-      
-      // Фильтрация карт в коллекции
-      const collectionCards = Array.isArray(allCards) && Array.isArray(collectionCardIds) 
-        ? allCards.filter(card => collectionCardIds.includes(card.id))
-        : [];
-      
-      console.log('Collection result:', collectionResult);
-      console.log('Filtered cards count:', collectionCards.length);
-      console.log('Filtered cards:', collectionCards);
-      
+
+      const collectionCards =
+        Array.isArray(allCards) && Array.isArray(collectionCardIds)
+          ? allCards.filter((card) => collectionCardIds.includes(card.id))
+          : [];
+
       setCards(collectionCards);
       setFilteredCards(collectionCards);
-      
-      // Установка статистики
+
       setCollectionStats({
         completion: completionResult,
         statsByRarity: statsByRarityResult,
         statsByPosition: statsByPositionResult,
-        playerCurrency: currencyResult
+        playerCurrency: currencyResult,
       });
-      
     } catch (error) {
-      Alert.alert('Ошибка', 'Не удалось загрузить коллекцию');
+      setLoadError('Не удалось загрузить коллекцию');
       console.error(error);
     } finally {
       setLoading(false);
@@ -124,14 +127,20 @@ const CollectionScreen = () => {
     />
   );
 
-  // Рендер пустого состояния
   const renderEmpty = () => (
     <View style={styles.emptyContainer}>
       <Text style={styles.emptyText}>У вас пока нет карт в коллекции</Text>
+      <Text style={styles.emptyHint}>Откройте пакет — карты появятся здесь</Text>
+      <TouchableOpacity
+        style={styles.emptyCta}
+        onPress={() => navigation.navigate('Пакеты')}
+        accessibilityRole="button"
+      >
+        <Text style={styles.emptyCtaText}>Открыть пакеты</Text>
+      </TouchableOpacity>
     </View>
   );
 
-  // Рендер загрузки
   if (loading) {
     return (
       <View style={styles.container}>
@@ -139,8 +148,28 @@ const CollectionScreen = () => {
           <Text style={styles.title}>Моя коллекция</Text>
         </View>
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#0066cc" />
+          <ActivityIndicator size="large" color={BubbleTheme.primary} />
           <Text style={styles.loadingText}>Загрузка коллекции...</Text>
+        </View>
+      </View>
+    );
+  }
+
+  if (loadError) {
+    return (
+      <View style={styles.container}>
+        <View style={styles.header}>
+          <Text style={styles.title}>Моя коллекция</Text>
+        </View>
+        <View style={styles.emptyContainer}>
+          <Text style={styles.emptyText}>{loadError}</Text>
+          <TouchableOpacity
+            style={styles.emptyCta}
+            onPress={loadCollection}
+            accessibilityRole="button"
+          >
+            <Text style={styles.emptyCtaText}>Повторить</Text>
+          </TouchableOpacity>
         </View>
       </View>
     );
@@ -180,100 +209,68 @@ const CollectionScreen = () => {
             ]}
             onPress={() => setFilters({...filters, rarity: 'all'})}
           >
-            <Text style={styles.filterButtonText}>Все</Text>
+            <Text
+              style={[
+                styles.filterButtonText,
+                filters.rarity === 'all' && styles.filterButtonTextActive,
+              ]}
+            >
+              Все
+            </Text>
           </TouchableOpacity>
-          
-          <TouchableOpacity 
-            style={[
-              styles.filterButton, 
-              filters.rarity === 'common' && styles.filterButtonActive
-            ]}
-            onPress={() => setFilters({...filters, rarity: 'common'})}
-          >
-            <Text style={styles.filterButtonText}>Обычные</Text>
-          </TouchableOpacity>
-          
-          <TouchableOpacity 
-            style={[
-              styles.filterButton, 
-              filters.rarity === 'rare' && styles.filterButtonActive
-            ]}
-            onPress={() => setFilters({...filters, rarity: 'rare'})}
-          >
-            <Text style={styles.filterButtonText}>Редкие</Text>
-          </TouchableOpacity>
-          
-          <TouchableOpacity 
-            style={[
-              styles.filterButton, 
-              filters.rarity === 'epic' && styles.filterButtonActive
-            ]}
-            onPress={() => setFilters({...filters, rarity: 'epic'})}
-          >
-            <Text style={styles.filterButtonText}>Эпические</Text>
-          </TouchableOpacity>
-          
-          <TouchableOpacity 
-            style={[
-              styles.filterButton, 
-              filters.rarity === 'legendary' && styles.filterButtonActive
-            ]}
-            onPress={() => setFilters({...filters, rarity: 'legendary'})}
-          >
-            <Text style={styles.filterButtonText}>Легендарные</Text>
-          </TouchableOpacity>
+
+          {[
+            ['common', 'Обычные'],
+            ['rare', 'Редкие'],
+            ['epic', 'Эпические'],
+            ['legendary', 'Легендарные'],
+          ].map(([key, label]) => (
+            <TouchableOpacity
+              key={key}
+              style={[
+                styles.filterButton,
+                filters.rarity === key && styles.filterButtonActive,
+              ]}
+              onPress={() => setFilters({ ...filters, rarity: key })}
+            >
+              <Text
+                style={[
+                  styles.filterButtonText,
+                  filters.rarity === key && styles.filterButtonTextActive,
+                ]}
+              >
+                {label}
+              </Text>
+            </TouchableOpacity>
+          ))}
         </View>
-        
+
         <View style={styles.filterRow}>
-          <TouchableOpacity 
-            style={[
-              styles.filterButton, 
-              filters.position === 'all' && styles.filterButtonActive
-            ]}
-            onPress={() => setFilters({...filters, position: 'all'})}
-          >
-            <Text style={styles.filterButtonText}>Все позиции</Text>
-          </TouchableOpacity>
-          
-          <TouchableOpacity 
-            style={[
-              styles.filterButton, 
-              filters.position === 'attacker' && styles.filterButtonActive
-            ]}
-            onPress={() => setFilters({...filters, position: 'attacker'})}
-          >
-            <Text style={styles.filterButtonText}>Нападающие</Text>
-          </TouchableOpacity>
-          
-          <TouchableOpacity 
-            style={[
-              styles.filterButton, 
-              filters.position === 'midfielder' && styles.filterButtonActive
-            ]}
-            onPress={() => setFilters({...filters, position: 'midfielder'})}
-          >
-            <Text style={styles.filterButtonText}>Полузащитники</Text>
-          </TouchableOpacity>
-          
-          <TouchableOpacity 
-            style={[
-              styles.filterButton, 
-              filters.position === 'defender' && styles.filterButtonActive
-            ]}
-            onPress={() => setFilters({...filters, position: 'defender'})}
-          >
-            <Text style={styles.filterButtonText}>Защитники</Text>
-          </TouchableOpacity>
-          
-          <TouchableOpacity 
-            style={[
-              styles.filterButton, 
-              filters.position === 'goalkeeper' && styles.filterButtonActive
-            ]}
-            onPress={() => setFilters({...filters, position: 'goalkeeper'})}
-          >
-            <Text style={styles.filterButtonText}>Вратари</Text>
-          </TouchableOpacity>
+          {[
+            ['all', 'Все позиции'],
+            ['attacker', 'Нападающие'],
+            ['midfielder', 'Полузащитники'],
+            ['defender', 'Защитники'],
+            ['goalkeeper', 'Вратари'],
+          ].map(([key, label]) => (
+            <TouchableOpacity
+              key={key}
+              style={[
+                styles.filterButton,
+                filters.position === key && styles.filterButtonActive,
+              ]}
+              onPress={() => setFilters({ ...filters, position: key })}
+            >
+              <Text
+                style={[
+                  styles.filterButtonText,
+                  filters.position === key && styles.filterButtonTextActive,
+                ]}
+              >
+                {label}
+              </Text>
+            </TouchableOpacity>
+          ))}
         </View>
       </View>
       
@@ -301,15 +298,13 @@ const CollectionScreen = () => {
   );
 };
 
-import { TextInput } from 'react-native';
-
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#DFF6FF',
+    backgroundColor: BubbleTheme.bg,
   },
   header: {
-    backgroundColor: '#9BE7FF',
+    backgroundColor: BubbleTheme.bar,
     padding: 20,
     paddingTop: 40,
     borderBottomLeftRadius: 28,
@@ -318,7 +313,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#2A2150',
+    color: BubbleTheme.text,
     textAlign: 'center',
   },
   statsHeader: {
@@ -327,79 +322,105 @@ const styles = StyleSheet.create({
   },
   statsText: {
     fontSize: 14,
-    color: '#6A6290',
+    color: BubbleTheme.muted,
     marginVertical: 2,
   },
   currencyText: {
-    color: '#FF6B8A',
+    color: BubbleTheme.primary,
     fontWeight: 'bold',
   },
   filtersContainer: {
     padding: 10,
-    backgroundColor: '#FFF7FB',
+    backgroundColor: BubbleTheme.card,
     borderBottomWidth: 1,
-    borderBottomColor: '#B9E8F7',
+    borderBottomColor: BubbleTheme.line,
   },
   filterRow: {
     flexDirection: 'row',
-    justifyContent: 'space-around',
+    flexWrap: 'wrap',
+    justifyContent: 'flex-start',
     marginBottom: 10,
+    gap: 6,
   },
   filterButton: {
-    backgroundColor: '#E5F7FF',
-    paddingHorizontal: 10,
-    paddingVertical: 8,
+    backgroundColor: BubbleTheme.track,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
     borderRadius: 999,
-    marginHorizontal: 5,
-    minHeight: 36,
+    minHeight: 44,
+    justifyContent: 'center',
   },
   filterButtonActive: {
-    backgroundColor: '#FF6B8A',
+    backgroundColor: BubbleTheme.primary,
   },
   filterButtonText: {
-    color: '#2A2150',
+    color: BubbleTheme.text,
     fontSize: 12,
     fontWeight: '700',
   },
   filterButtonTextActive: {
-    color: 'white',
+    color: BubbleTheme.onPrimary,
   },
   searchContainer: {
     padding: 10,
-    backgroundColor: '#FFF7FB',
+    backgroundColor: BubbleTheme.card,
   },
   searchInput: {
-    backgroundColor: '#E5F7FF',
+    backgroundColor: BubbleTheme.track,
     borderRadius: 999,
     paddingHorizontal: 15,
-    paddingVertical: 10,
+    paddingVertical: 12,
     fontSize: 14,
-    color: '#2A2150',
+    color: BubbleTheme.text,
+    minHeight: 44,
   },
   listContainer: {
     padding: 10,
+    flexGrow: 1,
   },
   emptyContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 20,
+    padding: 24,
+    minHeight: 280,
   },
   emptyText: {
     fontSize: 16,
-    color: '#6A6290',
+    color: BubbleTheme.text,
     textAlign: 'center',
+    fontWeight: '700',
+  },
+  emptyHint: {
+    marginTop: 8,
+    fontSize: 14,
+    color: BubbleTheme.muted,
+    textAlign: 'center',
+  },
+  emptyCta: {
+    marginTop: 16,
+    backgroundColor: BubbleTheme.primary,
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderRadius: 999,
+    minHeight: 44,
+    justifyContent: 'center',
+  },
+  emptyCtaText: {
+    color: BubbleTheme.onPrimary,
+    fontWeight: '800',
+    fontSize: 15,
   },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#DFF6FF',
+    backgroundColor: BubbleTheme.bg,
   },
   loadingText: {
     marginTop: 10,
     fontSize: 16,
-    color: '#6A6290',
+    color: BubbleTheme.muted,
   },
 });
 

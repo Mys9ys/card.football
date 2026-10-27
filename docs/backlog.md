@@ -9,19 +9,7 @@ _(пусто)_
 
 ## Ready
 
-Приоритет: **CF-101** (GDD). Затем **CF-103**, **CF-107**. Дальше: CF-102, CF-104, CF-106. Стиль: **Шарик выбран** → добивать CF-110 / polish mobile.
-
-### CF-101: Улучшение карт
-**Цель:** заменить заглушку `upgradeCard` правилами из `docs/CARD_COLLECTION_SYSTEM.md`.  
-**AC:**
-1) `docs/mechanics/card-upgrade.md`: таблица редкость → дубликаты и валюта на уровни 1–3 и бонус к статам
-2) `upgradeCard` в `game_logic/collection_system.js` возвращает `success: false`, если не хватает дубликатов или валюты
-3) уровень хранится по `cardId` (не один общий `upgradeLevel: 1` на коллекцию)
-4) контракт `(playerId, cardId, duplicateCount)` сохранён, либо breaking change явно в handoff
-**Исполнитель:** @agent-gdd  
-**Зависимости:** нет  
-**Вне скоупа:** экран улучшения в mobile; торговля между игроками  
-**ROADMAP:** Фаза 2, система улучшения карт
+Приоритет: **CF-103** (энергия) → **CF-104** → **CF-106**. UI: PackCard/MatchScreen под Bubble (хвост CF-110/107).
 
 ### CF-103: Энергия и действия
 **Цель:** ввести лимит действий (матч, открытие пака) до серверной экономики.  
@@ -34,40 +22,14 @@ _(пусто)_
 **Вне скоупа:** UI счётчика, IAP, серверное хранение энергии; не править `upgradeCard` в этой задаче  
 **ROADMAP:** Фаза 2, система энергии/действий
 
-### CF-107: UX-состояния коллекции, матча и паков
-**Цель:** закрыть дыры Фазы 3 по states и размерам экрана на уже существующих экранах.  
-**AC:**
-1) specs `docs/design/collection.md`, `docs/design/match.md`, `docs/design/packs.md`: flow и states loading / empty / error / success
-2) в каждом spec: touch targets ≥ 44pt и поведение на ширине телефона и планшета
-3) AC для @agent-frontend-rn (что менять в `CollectionScreen`, `MatchScreen`, `PackOpeningScreen`)
-**Исполнитель:** @agent-ux → @agent-frontend-rn  
-**Зависимости:** нет  
-**Вне скоупа:** новый визуальный стиль с нуля, Lottie на все экраны, экран профиля (это CF-002)  
-**ROADMAP:** Фаза 3, UX/UI — состояния, размеры экранов, доступность касаний
-
 ## Ожидает зависимости
 
-### CF-110: Design system «Шарик» + polish mobile
-**Цель:** закрепить выбранный Bubble в docs и довести экраны mobile до единого вида.  
-**AC:**
-1) `docs/design/directions/chosen-bubble.md` + `image-prompts.md` есть
-2) `CardItem` и вкладки Пакеты / Коллекция / Команда / Профиль на токенах Bubble
-3) на паке — мячи, не звёзды; голова на карте не обрезана; имя без большого зазора
-4) разные причёски игроков — через промпты из `image-prompts.md` (контент-пайплайн)
-**Исполнитель:** @agent-ux → @agent-frontend-rn  
-**Зависимости:** выбор заказчика (Шарик)  
-**Статус:** старт сделан (тема + CardItem + скины экранов); polish по ходу  
-**ROADMAP:** Фаза 3, UX/UI
-
-### CF-102: Тесты улучшения карт
-**Цель:** закрепить правила CF-101 регрессом.  
-**AC:**
-1) ≥3 теста (`node --test`): успешный апгрейд, нехватка дубликатов, карта не в коллекции
-2) команда запуска дописана туда же, где запуск тестов CF-001
-**Исполнитель:** @agent-qa  
-**Зависимости:** CF-101  
-**Вне скоупа:** смена таблиц стоимости  
-**ROADMAP:** Фаза 2, система улучшения карт
+### CF-110b: PackCard + MatchScreen → Bubble
+**Цель:** добить хвост CF-110/107 — PackCard и MatchScreen ещё на legacy blue.  
+**AC:** по `docs/design/packs.md` и `docs/design/match.md`  
+**Исполнитель:** @agent-frontend-rn  
+**Зависимости:** CF-107 specs (готовы)  
+**ROADMAP:** Фаза 3
 
 ### CF-104: Схема и мотивация в матче
 **Цель:** тактическая схема и карта тренера меняют розыгрыш, не ломая лимит 5 атак / 5 защит.  
@@ -109,8 +71,14 @@ _(пусто)_
 ### CF-109: Пять art direction + выбор «Шарик»
 **UX + заказчик:** 5 directions, preview, `chosen-bubble.md`, `image-prompts.md`. Выбрано **Bubble / Шарик**.
 
-### CF-110 (старт): Bubble в mobile
-**Frontend:** `theme/bubble.js`, `CardItem`, скины вкладок, ассеты `assets/theme/*-bubble.jpg`. Polish остаётся в Ready.
+### CF-110: Bubble в mobile + polish коллекции
+**Lead:** тема, CardItem, вкладки; Collection empty/error/CTA; Lv. на карте. Портреты-вариации — Content позже. PackCard/Match → CF-110b.
+
+### CF-101 + CF-102: Улучшение карт
+**Lead:** `docs/mechanics/card-upgrade.md`, `upgradeCard` по cardId, тесты + `docs/qa/cf-101-card-upgrade.md`.
+
+### CF-107: UX states (specs)
+**Lead:** `docs/design/collection.md`, `packs.md`, `match.md`. Реализация Pack/Match → CF-110b; Collection частично в CF-110.
 
 ### CF-001 / CF-001b: Match engine + таймы
 **QA + GDD:** 26 тестов, `docs/mechanics/match-halves.md`, `docs/qa/cf-001-match-engine.md`.

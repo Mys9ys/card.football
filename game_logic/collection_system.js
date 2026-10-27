@@ -1,4 +1,37 @@
 // Система коллекции карт для игры "Карточный футбол"
+// Upgrade costs: docs/mechanics/card-upgrade.md
+
+const UPGRADE_COSTS = Object.freeze({
+  common: [
+    { duplicates: 2, currency: 20 },
+    { duplicates: 3, currency: 50 },
+    { duplicates: 5, currency: 100 }
+  ],
+  rare: [
+    { duplicates: 2, currency: 50 },
+    { duplicates: 3, currency: 120 },
+    { duplicates: 4, currency: 250 }
+  ],
+  epic: [
+    { duplicates: 2, currency: 150 },
+    { duplicates: 3, currency: 350 },
+    { duplicates: 4, currency: 700 }
+  ],
+  legendary: [
+    { duplicates: 1, currency: 400 },
+    { duplicates: 2, currency: 900 },
+    { duplicates: 3, currency: 1800 }
+  ]
+});
+
+const STAT_BONUS_PER_LEVEL = Object.freeze({
+  common: 2,
+  rare: 3,
+  epic: 4,
+  legendary: 5
+});
+
+const MAX_CARD_LEVEL = 3;
 
 class CollectionSystem {
   constructor() {
@@ -21,7 +54,9 @@ class CollectionSystem {
       currency: 1000, // Начальная игровая валюта
       packsOpened: 0, // Количество открытых пакетов
       cardsObtained: 0, // Общее количество полученных карт
-      duplicateCards: 0, // Количество дубликатов
+      duplicateCards: 0, // Количество дубликатов (сумма)
+      cardDuplicates: {}, // { [cardId]: count }
+      cardLevels: {}, // { [cardId]: 0..3 }
       cardUpgrades: 0, // Количество улучшений карт
       lastUpdated: new Date().toISOString()
     });
@@ -48,18 +83,26 @@ class CollectionSystem {
     const newCards = [];
     const duplicates = [];
     
+    if (!playerCollection.cardDuplicates) {
+      playerCollection.cardDuplicates = {};
+    }
+    if (!playerCollection.cardLevels) {
+      playerCollection.cardLevels = {};
+    }
+
     cards.forEach(card => {
       if (playerCollection.cards.includes(card.id)) {
-        // Карта уже есть в коллекции - дубликат
+        // Карта уже есть — дубликат (валюта + запас для апгрейда)
         duplicates.push(card);
         playerCollection.duplicateCards++;
-        
-        // Дубликаты можно обменять на валюту или использовать для улучшения
+        playerCollection.cardDuplicates[card.id] =
+          (playerCollection.cardDuplicates[card.id] || 0) + 1;
+
         const currencyEarned = this.getCurrencyForDuplicate(card.rarity);
         playerCollection.currency += currencyEarned;
       } else {
-        // Новая карта
         playerCollection.cards.push(card.id);
+        playerCollection.cardLevels[card.id] = 0;
         newCards.push(card);
       }
     });
@@ -185,38 +228,109 @@ class CollectionSystem {
     };
   }
 
+  getCardLevel(playerId, cardId) {
+    const playerCollection = this.playerCollections.get(playerId);
+    if (!playerCollection || !playerCollection.cards.includes(cardId)) {
+      return 0;
+    }
+    if (!playerCollection.cardLevels) {
+      playerCollection.cardLevels = {};
+    }
+    return playerCollection.cardLevels[cardId] || 0;
+  }
+
+  getUpgradeCost(rarity, nextLevel) {
+    const ladder = UPGRADE_COSTS[rarity];
+    if (!ladder || nextLevel < 1 || nextLevel > MAX_CARD_LEVEL) {
+      return null;
+    }
+    return ladder[nextLevel - 1];
+  }
+
+  getStatBonusPerLevel(rarity) {
+    return STAT_BONUS_PER_LEVEL[rarity] || 0;
+  }
+
   /**
-   * Улучшение карты с использованием дубликатов
+   * Эффективные статы с учётом уровня карты.
+   * card — объект из player_cards (базовые числа).
+   */
+  getEffectiveStats(playerId, card) {
+    const level = this.getCardLevel(playerId, card.id);
+    const bonus = this.getStatBonusPerLevel(card.rarity) * level;
+    return {
+      attack: (card.attack || 0) + bonus,
+      defense: (card.defense || 0) + bonus,
+      speed: (card.speed || 0) + bonus,
+      technique: (card.technique || 0) + bonus,
+      level
+    };
+  }
+
+  /**
+   * Улучшение карты: дубликаты этой карты + валюта.
+   * Контракт: (playerId, cardId, duplicateCount)
    */
   upgradeCard(playerId, cardId, duplicateCount) {
     const playerCollection = this.playerCollections.get(playerId);
-    
+
     if (!playerCollection) {
-      return {
-        success: false,
-        error: `Коллекция для игрока ${playerId} не найдена`
-      };
+      return { success: false, error: 'collection_not_found' };
     }
 
-    // Проверяем, есть ли карта в коллекции
+    if (!playerCollection.cardDuplicates) {
+      playerCollection.cardDuplicates = {};
+    }
+    if (!playerCollection.cardLevels) {
+      playerCollection.cardLevels = {};
+    }
+
     if (!playerCollection.cards.includes(cardId)) {
-      return {
-        success: false,
-        error: `Карта ${cardId} не найдена в коллекции игрока ${playerId}`
-      };
+      return { success: false, error: 'card_not_owned' };
     }
 
-    // В реальной игре улучшение карты требует определенного количества дубликатов
-    // и валюты. Здесь упрощенная реализация.
-    
+    const allCards = require('./player_cards');
+    const card = allCards.find((c) => c.id === cardId);
+    if (!card || !UPGRADE_COSTS[card.rarity]) {
+      return { success: false, error: 'unknown_rarity' };
+    }
+
+    const currentLevel = playerCollection.cardLevels[cardId] || 0;
+    if (currentLevel >= MAX_CARD_LEVEL) {
+      return { success: false, error: 'max_level' };
+    }
+
+    const nextLevel = currentLevel + 1;
+    const cost = this.getUpgradeCost(card.rarity, nextLevel);
+    const availableDuplicates = playerCollection.cardDuplicates[cardId] || 0;
+    const offered = Number(duplicateCount) || 0;
+
+    if (offered < cost.duplicates || availableDuplicates < cost.duplicates) {
+      return { success: false, error: 'not_enough_duplicates' };
+    }
+
+    if (playerCollection.currency < cost.currency) {
+      return { success: false, error: 'not_enough_currency' };
+    }
+
+    playerCollection.cardDuplicates[cardId] = availableDuplicates - cost.duplicates;
+    playerCollection.duplicateCards = Math.max(
+      0,
+      (playerCollection.duplicateCards || 0) - cost.duplicates
+    );
+    playerCollection.currency -= cost.currency;
+    playerCollection.cardLevels[cardId] = nextLevel;
     playerCollection.cardUpgrades++;
-    playerCollection.duplicateCards -= duplicateCount;
     playerCollection.lastUpdated = new Date().toISOString();
 
     return {
       success: true,
-      message: `Карта ${cardId} улучшена с использованием ${duplicateCount} дубликатов`,
-      upgradeLevel: 1 // В реальной игре здесь был бы уровень улучшения
+      upgradeLevel: nextLevel,
+      duplicatesSpent: cost.duplicates,
+      currencySpent: cost.currency,
+      remainingDuplicates: playerCollection.cardDuplicates[cardId],
+      remainingCurrency: playerCollection.currency,
+      message: `Карта ${cardId} улучшена до уровня ${nextLevel}`
     };
   }
 
