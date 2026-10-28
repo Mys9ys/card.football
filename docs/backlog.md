@@ -25,10 +25,10 @@ _(пусто)_
 ## Ожидает зависимости
 
 ### CF-110b: PackCard + MatchScreen → Bubble
-**Цель:** добить хвост CF-110/107 — PackCard и MatchScreen ещё на legacy blue.  
-**AC:** по `docs/design/packs.md` и `docs/design/match.md`  
-**Исполнитель:** @agent-frontend-rn  
-**Зависимости:** CF-107 specs (готовы)  
+**Цель:** добить хвост CF-110/107 — PackCard и MatchScreen ещё на legacy blue.
+**AC:** по `docs/design/packs.md` (Bubble redesign) и `docs/design/match.md`
+**Исполнитель:** @agent-frontend-rn
+**Зависимости:** CF-107 specs; packs design обновлён (CF-110b-design)
 **ROADMAP:** Фаза 3
 
 ### CF-104: Схема и мотивация в матче
