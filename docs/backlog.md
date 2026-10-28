@@ -9,22 +9,16 @@ _(пусто)_
 
 ## Ready
 
-Приоритет: **CF-108**. UI energy / кубок / апгрейд в mobile — после shared/API (Icebox).
+_(пусто — следующий срез: wiring `copy-ru` в mobile / shared `game_logic` / UI Icebox.)_
 
 ## Ожидает зависимости
 
-### CF-108: Строки интерфейса RU
-**Цель:** собрать подписи существующих экранов в одном файле копирайта.  
-**AC:**
-1) `docs/content/copy-ru.md` покрывает подписи Collection, Match, Pack, Team, Profile, Tournament (кнопки, пустые состояния, ошибки)
-2) ключи на English, тексты на русском
-3) список ключей, которые Frontend должен подставить вместо захардкоженных строк
-**Исполнитель:** @agent-content → @agent-frontend-rn  
-**Зависимости:** CF-002, CF-107  
-**Вне скоупа:** комментатор матча, другие языки  
-**ROADMAP:** Фаза 3, локализация
+_(пусто)_
 
 ## Сделано
+
+### CF-108: Строки интерфейса RU
+**Content (Lead):** `docs/content/copy-ru.md` — ключи EN, тексты RU, чеклист для Frontend.
 
 ### CF-109: Пять art direction + выбор «Шарик»
 **UX + заказчик:** 5 directions, preview, `chosen-bubble.md`, `image-prompts.md`. Выбрано **Bubble / Шарик**.
