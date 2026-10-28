@@ -1,11 +1,26 @@
-// Экран открытия пакетов
+// Pack opening screen — Bubble («Шарик»)
 
 import React, { useState, useRef, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, Alert, Modal, Image, TouchableOpacity, Animated, Easing, Platform } from 'react-native';
-import LottieView from 'lottie-react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  Alert,
+  Modal,
+  Image,
+  TouchableOpacity,
+  Animated,
+  Easing,
+  Platform,
+  ActivityIndicator,
+} from 'react-native';
 import { PackService } from '../services/PackService';
-import PackCard from '../components/PackCard';
+import { getPackArt } from '../components/PackCard';
+import PackShopShelf from '../components/PackShopShelf';
 import CollectionStats from '../components/CollectionStats';
+import CoinIcon from '../components/CoinIcon';
+import { BubbleTheme } from '../theme/bubble';
 
 const PackOpeningScreen = () => {
   const [packs, setPacks] = useState([]);
@@ -14,124 +29,133 @@ const PackOpeningScreen = () => {
     statsByRarity: null,
     statsByPosition: null,
     completion: null,
-    playerCurrency: null
+    playerCurrency: null,
   });
-  
+  const [loading, setLoading] = useState(true);
   const [isOpening, setIsOpening] = useState(false);
+  const [openingPackId, setOpeningPackId] = useState(null);
   const [showResults, setShowResults] = useState(false);
   const [packResult, setPackResult] = useState(null);
   const [scrollAreaHeight, setScrollAreaHeight] = useState(0);
-  const packAnimation = useRef(null);
   const pulseAnimation = useRef(new Animated.Value(1)).current;
 
-  // Загрузка данных при монтировании компонента
   useEffect(() => {
     loadPackData();
   }, []);
 
-  // Анимация пульсации пакета
   useEffect(() => {
-    if (packs.length > 0) {
-      Animated.loop(
-        Animated.sequence([
-          Animated.timing(pulseAnimation, {
-            toValue: 1.1,
-            duration: 1000,
-            easing: Easing.inOut(Easing.ease),
-            useNativeDriver: true,
-          }),
-          Animated.timing(pulseAnimation, {
-            toValue: 1,
-            duration: 1000,
-            easing: Easing.inOut(Easing.ease),
-            useNativeDriver: true,
-          }),
-        ])
-      ).start();
+    if (!isOpening) {
+      pulseAnimation.setValue(1);
+      return undefined;
     }
-  }, [packs]);
+    const loop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(pulseAnimation, {
+          toValue: 1.08,
+          duration: 900,
+          easing: Easing.inOut(Easing.ease),
+          useNativeDriver: true,
+        }),
+        Animated.timing(pulseAnimation, {
+          toValue: 1,
+          duration: 900,
+          easing: Easing.inOut(Easing.ease),
+          useNativeDriver: true,
+        }),
+      ])
+    );
+    loop.start();
+    return () => loop.stop();
+  }, [isOpening, pulseAnimation]);
 
-  // Загрузка данных пакетов и статистики
+  const refreshStats = () => {
+    const collectionResult = PackService.getPlayerCollection();
+    const statsByRarityResult = PackService.getCollectionStatsByRarity();
+    const statsByPositionResult = PackService.getCollectionStatsByPosition();
+    const completionResult = PackService.getCollectionCompletion();
+    const currencyResult = PackService.getPlayerCurrency();
+    setStats({
+      collection: collectionResult,
+      statsByRarity: statsByRarityResult,
+      statsByPosition: statsByPositionResult,
+      completion: completionResult,
+      playerCurrency: currencyResult,
+    });
+  };
+
   const loadPackData = () => {
     try {
+      setLoading(true);
       const packTypes = PackService.getAllPackTypes();
       setPacks(packTypes);
-      
-      const collectionResult = PackService.getPlayerCollection();
-      const statsByRarityResult = PackService.getCollectionStatsByRarity();
-      const statsByPositionResult = PackService.getCollectionStatsByPosition();
-      const completionResult = PackService.getCollectionCompletion();
-      const currencyResult = PackService.getPlayerCurrency();
-      
-      setStats({
-        collection: collectionResult,
-        statsByRarity: statsByRarityResult,
-        statsByPosition: statsByPositionResult,
-        completion: completionResult,
-        playerCurrency: currencyResult
-      });
+      refreshStats();
     } catch (error) {
       Alert.alert('Ошибка', 'Не удалось загрузить данные пакетов');
       console.error('Error loading pack data:', error);
+    } finally {
+      setLoading(false);
     }
   };
 
-  const handleOpenPack = async (packTypeId) => {
-    // Подтверждение покупки
+  const balance =
+    typeof stats.playerCurrency?.currency === 'number'
+      ? stats.playerCurrency.currency
+      : 0;
+
+  const handleOpenPack = (packTypeId) => {
+    if (isOpening) return;
+
+    const pack = packs.find((p) => p.id === packTypeId);
+    if (!pack) return;
+
+    const current =
+      PackService.getPlayerCurrency()?.currency ?? balance;
+
+    if (current < pack.price) {
+      Alert.alert(
+        'Не хватает монет',
+        `Нужно ${pack.price}, у вас ${current}.`,
+        [{ text: 'Понятно' }]
+      );
+      return;
+    }
+
     Alert.alert(
-      'Покупка пакета',
-      `Вы уверены, что хотите купить пакет за ${PackService.getAllPackTypes().find(p => p.id === packTypeId).price} монет?`,
+      'Купить пак',
+      pack.price === 0
+        ? `Открыть «${pack.name}» бесплатно?`
+        : `Купить «${pack.name}» за ${pack.price} монет и сразу открыть?`,
       [
         { text: 'Отмена', style: 'cancel' },
         {
-          text: 'Купить',
+          text: pack.price === 0 ? 'Открыть' : 'Купить',
           onPress: async () => {
+            setOpeningPackId(packTypeId);
             setIsOpening(true);
-            
-            // Запуск анимации открытия пакета
-            if (packAnimation.current) {
-              packAnimation.current.play();
-            }
-            
-            // Убираем имитацию процесса открытия пакета с анимацией
             try {
-                console.log('Attempting to open pack:', packTypeId);
-                const result = await PackService.openPack(packTypeId);
-                console.log('Pack opening result in screen:', result);
-                
-                if (result.success) {
-                  setPackResult(result);
-                  setShowResults(true);
-                  
-                  // Обновление статистики
-                  const collectionResult = PackService.getPlayerCollection();
-                  console.log('Updated collection:', collectionResult);
-                  
-                  const statsByRarityResult = PackService.getCollectionStatsByRarity();
-                  const statsByPositionResult = PackService.getCollectionStatsByPosition();
-                  const completionResult = PackService.getCollectionCompletion();
-                  const currencyResult = PackService.getPlayerCurrency();
-                  console.log('Updated currency:', currencyResult);
-                  
-                  setStats({
-                    collection: collectionResult,
-                    statsByRarity: statsByRarityResult,
-                    statsByPosition: statsByPositionResult,
-                    completion: completionResult,
-                    playerCurrency: currencyResult
-                  });
-                } else {
-                  Alert.alert('Ошибка', result.error);
-                  console.error('Pack opening failed:', result.error);
-                }
-              } catch (error) {
-                Alert.alert('Ошибка', 'Не удалось открыть пакет');
-                console.error('Error opening pack:', error);
+              const result = await PackService.openPack(packTypeId);
+              if (result.success) {
+                setPackResult(result);
+                setShowResults(true);
+                refreshStats();
+              } else {
+                Alert.alert('Ошибка', result.error || 'Не удалось открыть пакет', [
+                  { text: 'Повторить', onPress: () => handleOpenPack(packTypeId) },
+                  { text: 'Отмена', style: 'cancel' },
+                ]);
               }
-
+            } catch (error) {
+              Alert.alert('Ошибка', 'Не удалось открыть пакет', [
+                { text: 'Повторить', onPress: () => handleOpenPack(packTypeId) },
+                { text: 'Отмена', style: 'cancel' },
+              ]);
+              console.error('Error opening pack:', error);
+            } finally {
               setIsOpening(false);
-          }
-        }
+              setOpeningPackId(null);
+            }
+          },
+        },
       ]
     );
   };
@@ -141,16 +165,40 @@ const PackOpeningScreen = () => {
     setPackResult(null);
   };
 
-  // Показываем индикатор загрузки, пока данные не загружены
-  if (packs.length === 0) {
+  const renderHeader = () => (
+    <View style={styles.topBar}>
+      <View>
+        <Text style={styles.topTitle}>Магазин</Text>
+        <Text style={styles.topSubtitle}>паки · купить и открыть</Text>
+      </View>
+      <View style={styles.balancePill}>
+        <Text style={styles.balanceText}>{balance}</Text>
+        <CoinIcon size={22} style={styles.balanceCoin} />
+      </View>
+    </View>
+  );
+
+  if (loading && packs.length === 0) {
     return (
       <View style={styles.container}>
-        <View style={styles.header}>
-          <Text style={styles.title}>Открытие пакетов</Text>
-          <Text style={styles.subtitle}>Получайте новые карты для своей команды</Text>
-        </View>
-        <View style={styles.loadingContainer}>
+        {renderHeader()}
+        <View style={styles.loadingBlock}>
+          <ActivityIndicator size="large" color={BubbleTheme.primary} />
           <Text style={styles.loadingText}>Загрузка пакетов...</Text>
+        </View>
+      </View>
+    );
+  }
+
+  if (!loading && packs.length === 0) {
+    return (
+      <View style={styles.container}>
+        {renderHeader()}
+        <View style={styles.loadingBlock}>
+          <Text style={styles.loadingText}>Пакеты временно недоступны</Text>
+          <TouchableOpacity style={styles.retryBtn} onPress={loadPackData}>
+            <Text style={styles.retryText}>Обновить</Text>
+          </TouchableOpacity>
         </View>
       </View>
     );
@@ -160,7 +208,6 @@ const PackOpeningScreen = () => {
     <View
       style={styles.container}
       onLayout={(e) => {
-        // Bound ScrollView height so web can scroll inside the phone column.
         const next = Math.floor(e.nativeEvent.layout.height);
         if (next > 0 && next !== scrollAreaHeight) {
           setScrollAreaHeight(next);
@@ -178,29 +225,20 @@ const PackOpeningScreen = () => {
         keyboardShouldPersistTaps="handled"
         nestedScrollEnabled
       >
-        <View style={styles.header}>
-          <Text style={styles.title}>Открытие пакетов</Text>
-          <Text style={styles.subtitle}>Получайте новые карты для своей команды</Text>
-          <Image
-            source={require('../assets/theme/pack-bubble.jpg')}
-            style={styles.packHero}
-            resizeMode="cover"
-          />
-        </View>
+        {renderHeader()}
 
-        <CollectionStats stats={stats} completion={stats.completion} />
+        <CollectionStats
+          stats={stats}
+          completion={stats.completion}
+        />
 
-        <Text style={styles.packsTitle}>Доступные пакеты</Text>
-        {packs.map((pack) => (
-          <PackCard
-            key={pack.id}
-            pack={pack}
-            onPress={() => handleOpenPack(pack.id)}
-          />
-        ))}
+        <PackShopShelf
+          packs={packs}
+          disabled={isOpening}
+          onBuyPack={handleOpenPack}
+        />
       </ScrollView>
 
-      {/* Модальное окно для отображения результатов открытия пакета */}
       <Modal
         animationType="slide"
         transparent={false}
@@ -208,61 +246,63 @@ const PackOpeningScreen = () => {
         onRequestClose={handleCloseResults}
       >
         <View style={styles.modalContainer}>
-          <Text style={styles.modalTitle}>Результат открытия пакета</Text>
-          
+          <Text style={styles.modalTitle}>Новые карты</Text>
+
           {packResult && (
             <>
-              <Text style={styles.resultText}>Открыт пакет: {packResult.packType}</Text>
-              
-              <Text style={styles.sectionTitle}>Новые карты:</Text>
-              {packResult.collectionResult.newCards.map(card => (
+              <Text style={styles.resultText}>
+                Открыт пакет: {packResult.packType}
+              </Text>
+
+              <Text style={styles.sectionTitle}>Получено:</Text>
+              {packResult.collectionResult?.newCards?.map((card) => (
                 <View key={card.id} style={styles.cardResultItem}>
                   <Text style={styles.cardName}>{card.name}</Text>
-                  <Text style={styles.cardPosition}>{card.position}</Text>
-                  <Text style={styles.cardTeam}>{card.team}</Text>
+                  <Text style={styles.cardMeta}>{card.position}</Text>
                 </View>
               ))}
-              
-              {packResult.collectionResult.duplicates.length > 0 && (
+
+              {packResult.collectionResult?.duplicates?.length > 0 && (
                 <>
                   <Text style={styles.sectionTitle}>Дубликаты:</Text>
-                  {packResult.collectionResult.duplicates.map(card => (
-                    <View key={card.id} style={styles.cardResultItem}>
-                      <Text style={styles.cardName}>{card.name} (дубликат)</Text>
-                      <Text style={styles.duplicateText}>+{PackService.getCurrencyForDuplicate(card.rarity)} монет</Text>
+                  {packResult.collectionResult.duplicates.map((card) => (
+                    <View key={`dup-${card.id}`} style={styles.cardResultItem}>
+                      <Text style={styles.cardName}>{card.name}</Text>
+                      <Text style={styles.duplicateText}>
+                        Дубликат · +{PackService.getCurrencyForDuplicate(card.rarity)} монет
+                      </Text>
                     </View>
                   ))}
                 </>
               )}
-              
+
               <Text style={styles.finalBalance}>
-                Новый баланс: {packResult.playerCurrency.currency} монет
+                Баланс: {packResult.playerCurrency?.currency ?? balance} монет
               </Text>
             </>
           )}
-          
+
           <TouchableOpacity style={styles.closeButton} onPress={handleCloseResults}>
             <Text style={styles.closeButtonText}>Закрыть</Text>
           </TouchableOpacity>
         </View>
       </Modal>
-      
-      {/* Индикатор открытия пакета с анимацией */}
+
       {isOpening && (
         <View style={styles.openingOverlay}>
-          <Animated.View style={[styles.openingContainer, { transform: [{ scale: pulseAnimation }] }]}
-            onPress={() => {
-              if (packAnimation.current) {
-                packAnimation.current.play();
-              }
-            }}>
-            <Text style={styles.openingText}>Открытие пакета...</Text>
-            <LottieView
-              ref={packAnimation}
-              source={require('../assets/animations/pack-opening.json')}
-              autoPlay={false}
-              loop={false}
-              style={styles.openingAnimation}
+          <Animated.View
+            style={[styles.openingContainer, { transform: [{ scale: pulseAnimation }] }]}
+          >
+            <Text style={styles.openingText}>Вскрываем пак...</Text>
+            <Image
+              source={getPackArt(openingPackId)}
+              style={styles.openingPackArt}
+              resizeMode="cover"
+            />
+            <ActivityIndicator
+              style={styles.openingSpinner}
+              size="large"
+              color={BubbleTheme.primary}
             />
           </Animated.View>
         </View>
@@ -275,111 +315,146 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     height: '100%',
-    backgroundColor: '#DFF6FF',
+    backgroundColor: BubbleTheme.bg,
   },
-  header: {
-    backgroundColor: '#9BE7FF',
-    padding: 16,
-    paddingTop: 24,
+  topBar: {
+    backgroundColor: BubbleTheme.bar,
+    paddingHorizontal: 16,
+    paddingTop: Platform.OS === 'web' ? 20 : 48,
+    paddingBottom: 16,
     borderBottomLeftRadius: 28,
     borderBottomRightRadius: 28,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
   },
-  title: {
+  topTitle: {
     fontSize: 24,
-    fontWeight: 'bold',
-    color: '#2A2150',
-    textAlign: 'center',
+    fontWeight: '800',
+    color: BubbleTheme.text,
   },
-  subtitle: {
+  topSubtitle: {
+    marginTop: 2,
+    fontSize: 12,
+    fontWeight: '600',
+    color: BubbleTheme.muted,
+  },
+  balancePill: {
+    minHeight: 44,
+    minWidth: 72,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 999,
+    backgroundColor: BubbleTheme.coinBg,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+  },
+  balanceText: {
     fontSize: 16,
-    color: '#6A6290',
-    textAlign: 'center',
-    marginTop: 5,
+    fontWeight: '800',
+    color: BubbleTheme.coin,
+  },
+  balanceCoin: {
+    borderWidth: 1.5,
+    borderColor: 'rgba(255,255,255,0.55)',
   },
   list: {
     flexGrow: 1,
     flexShrink: 1,
   },
   listWeb: {
-    // RN Web: force overflow scroll once height is bounded
     overflow: 'auto',
   },
   listContent: {
-    paddingBottom: 96,
-    paddingHorizontal: 4,
+    paddingBottom: 24,
   },
-  packsTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    marginHorizontal: 16,
-    marginTop: 8,
-    marginBottom: 4,
-    color: '#2A2150',
+  loadingBlock: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 24,
+  },
+  loadingText: {
+    marginTop: 12,
+    fontSize: 15,
+    color: BubbleTheme.muted,
+    textAlign: 'center',
+  },
+  retryBtn: {
+    marginTop: 16,
+    minHeight: 44,
+    paddingHorizontal: 24,
+    borderRadius: 999,
+    backgroundColor: BubbleTheme.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  retryText: {
+    color: BubbleTheme.onPrimary,
+    fontWeight: '800',
+    fontSize: 15,
   },
   modalContainer: {
     flex: 1,
-    backgroundColor: '#FFF7FB',
+    backgroundColor: BubbleTheme.card,
     padding: 20,
     justifyContent: 'center',
   },
   modalTitle: {
     fontSize: 24,
-    fontWeight: 'bold',
+    fontWeight: '800',
     textAlign: 'center',
-    marginBottom: 20,
-    color: '#333',
+    marginBottom: 16,
+    color: BubbleTheme.text,
   },
   resultText: {
-    fontSize: 18,
+    fontSize: 16,
     textAlign: 'center',
-    marginBottom: 20,
-    color: '#333',
+    marginBottom: 12,
+    color: BubbleTheme.muted,
   },
   sectionTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginTop: 20,
-    marginBottom: 10,
-    color: '#333',
+    fontSize: 16,
+    fontWeight: '800',
+    marginTop: 16,
+    marginBottom: 8,
+    color: BubbleTheme.text,
   },
   cardResultItem: {
-    backgroundColor: '#f8f8f8',
-    padding: 15,
-    margin: 10,
-    borderRadius: 10,
+    backgroundColor: BubbleTheme.bg,
+    padding: 14,
+    marginVertical: 6,
+    borderRadius: BubbleTheme.radius,
     borderWidth: 1,
-    borderColor: '#eee',
+    borderColor: BubbleTheme.line,
   },
   cardName: {
     fontSize: 16,
-    fontWeight: 'bold',
-    color: '#333',
+    fontWeight: '700',
+    color: BubbleTheme.text,
   },
-  cardPosition: {
-    fontSize: 14,
-    color: '#666',
-    marginTop: 5,
-  },
-  cardTeam: {
-    fontSize: 14,
-    color: '#FF6B8A',
-    marginTop: 3,
+  cardMeta: {
+    fontSize: 13,
+    color: BubbleTheme.muted,
+    marginTop: 4,
   },
   duplicateText: {
-    fontSize: 14,
-    color: '#FF6B8A',
-    marginTop: 5,
-    fontWeight: 'bold',
+    fontSize: 13,
+    color: BubbleTheme.primary,
+    marginTop: 4,
+    fontWeight: '700',
   },
   finalBalance: {
-    fontSize: 18,
-    fontWeight: 'bold',
+    fontSize: 17,
+    fontWeight: '800',
     textAlign: 'center',
     marginTop: 20,
-    color: '#2A2150',
+    color: BubbleTheme.text,
   },
   closeButton: {
-    backgroundColor: '#FF6B8A',
+    backgroundColor: BubbleTheme.primary,
     padding: 15,
     borderRadius: 999,
     marginTop: 20,
@@ -387,56 +462,38 @@ const styles = StyleSheet.create({
     minHeight: 44,
   },
   closeButtonText: {
-    color: 'white',
+    color: BubbleTheme.onPrimary,
     fontSize: 16,
-    fontWeight: 'bold',
+    fontWeight: '800',
   },
   openingOverlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(42, 33, 80, 0.55)',
+    backgroundColor: 'rgba(42, 33, 80, 0.45)',
     justifyContent: 'center',
     alignItems: 'center',
     zIndex: 1000,
   },
   openingContainer: {
-    backgroundColor: '#FFF7FB',
-    padding: 30,
+    backgroundColor: BubbleTheme.card,
+    padding: 28,
     borderRadius: 24,
     alignItems: 'center',
   },
   openingText: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    marginBottom: 20,
-    color: '#2A2150',
+    fontSize: 18,
+    fontWeight: '800',
+    marginBottom: 16,
+    color: BubbleTheme.text,
   },
-  packHero: {
-    width: 120,
-    height: 150,
-    alignSelf: 'center',
-    marginTop: 10,
-    marginBottom: 4,
+  openingPackArt: {
+    width: 140,
+    height: 186,
     borderRadius: 20,
     borderWidth: 3,
-    borderColor: '#FF6B8A',
+    borderColor: BubbleTheme.primary,
   },
-  openingGif: {
-    width: 100,
-    height: 100,
-  },
-  openingAnimation: {
-    width: 150,
-    height: 150,
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  loadingText: {
-    fontSize: 16,
-    color: '#666',
-    marginTop: 10,
+  openingSpinner: {
+    marginTop: 16,
   },
 });
 

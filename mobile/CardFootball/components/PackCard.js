@@ -1,194 +1,230 @@
-// Компонент для отображения карточки пакета
+// Shop pack tile — art with price / count overlays, (i) for details
 
-import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import React, { useRef } from 'react';
+import {
+  View,
+  Text,
+  Image,
+  Pressable,
+  StyleSheet,
+  Animated,
+} from 'react-native';
+import { BubbleTheme, RARITY_LABELS } from '../theme/bubble';
+import CoinIcon from './CoinIcon';
 
-const PackCard = ({ pack, onPress }) => {
-  // Определение цвета рамки в зависимости от редкости пакета
-  const getBorderColor = () => {
-    switch (pack.id) {
-      case 'legendary':
-      case 'golden_legends':
-        return '#FFD700'; // Золотой для легендарных пакетов
-      case 'premium':
-      case 'defense_pack':
-        return '#8A2BE2'; // Фиолетовый для премиум пакетов
-      case 'standard':
-        return '#1E90FF'; // Синий для стандартных пакетов
-      case 'starter':
-        return '#32CD32'; // Зеленый для стартовых пакетов
-      default:
-        return '#CCCCCC'; // Серый для других
-    }
-  };
+const TIER_BY_PACK = {
+  starter: 'common',
+  standard: 'rare',
+  premium: 'epic',
+  defense_pack: 'epic',
+  legendary: 'legendary',
+  golden_legends: 'legendary',
+};
 
-  // Определение названия редкости
-  const getRarityName = () => {
-    switch (pack.id) {
-      case 'legendary':
-      case 'golden_legends':
-        return 'Легендарный';
-      case 'premium':
-      case 'defense_pack':
-        return 'Премиум';
-      case 'standard':
-        return 'Стандартный';
-      case 'starter':
-        return 'Стартовый';
-      default:
-        return 'Обычный';
-    }
+const PACK_ART = {
+  common: require('../assets/theme/pack-common.jpg'),
+  rare: require('../assets/theme/pack-rare.jpg'),
+  epic: require('../assets/theme/pack-epic.jpg'),
+  legendary: require('../assets/theme/pack-legendary.jpg'),
+};
+
+const GUARANTEE_LABEL = {
+  legendary: 'легенда',
+  epic: 'эпик',
+  rare: 'редкая',
+};
+
+export const TIER_ORDER = ['legendary', 'epic', 'rare', 'common'];
+
+export const TIER_TAB_LABELS = {
+  legendary: 'Легенд',
+  epic: 'Эпик',
+  rare: 'Редк',
+  common: 'Обычн',
+};
+
+export function getPackTier(packId) {
+  return TIER_BY_PACK[packId] || 'common';
+}
+
+export function getPackArt(packId) {
+  return PACK_ART[getPackTier(packId)] || PACK_ART.common;
+}
+
+export function getPackGuarantee(pack) {
+  if (pack.guaranteedLegendary) return GUARANTEE_LABEL.legendary;
+  if (pack.guaranteedEpic) return GUARANTEE_LABEL.epic;
+  if (pack.guaranteedRare) return GUARANTEE_LABEL.rare;
+  return null;
+}
+
+export function getPackInfoLines(pack) {
+  const tier = getPackTier(pack.id);
+  const legendaryChance = pack.rarityWeights?.legendary ?? 0;
+  const guarantee = getPackGuarantee(pack);
+  const lines = [
+    pack.name,
+    `${pack.cardsCount} карт`,
+    pack.price === 0 ? 'Бесплатно' : `${pack.price} монет`,
+    `Шанс легенды: ${legendaryChance}%`,
+    `Тир: ${RARITY_LABELS[tier]}`,
+  ];
+  if (guarantee) lines.push(`Гарантия: ${guarantee}`);
+  if (pack.description) lines.push(pack.description);
+  return lines;
+}
+
+/** Compact pack for overlapping shop shelf. Tap = buy/open. (i) = details. */
+const PackCard = ({ pack, onPress, onInfoPress, disabled, stackIndex = 0 }) => {
+  const tier = getPackTier(pack.id);
+  const colors = BubbleTheme.rarity[tier];
+  const scale = useRef(new Animated.Value(1)).current;
+
+  const animateTo = (to) => {
+    Animated.spring(scale, {
+      toValue: to,
+      useNativeDriver: true,
+      friction: 6,
+      tension: 160,
+    }).start();
   };
 
   return (
-    <TouchableOpacity style={[styles.container, { borderColor: getBorderColor() }]} onPress={onPress}>
-      <View style={styles.header}>
-        <Text style={styles.rarity}>{getRarityName()}</Text>
-        <Text style={styles.price}>{pack.price} монет</Text>
+    <Animated.View
+      style={[
+        styles.stackItem,
+        {
+          zIndex: 20 - stackIndex,
+          marginLeft: stackIndex === 0 ? 0 : -42,
+          transform: [{ scale }],
+        },
+        disabled && styles.disabled,
+      ]}
+    >
+      <View style={[styles.packFrame, { borderColor: colors.border }]}>
+        <Pressable
+          onPress={onPress}
+          disabled={disabled}
+          onPressIn={() => animateTo(0.96)}
+          onPressOut={() => animateTo(1)}
+          accessibilityRole="button"
+          accessibilityLabel={`Купить ${pack.name}, ${pack.price === 0 ? 'бесплатно' : `${pack.price} монет`}`}
+          style={styles.packHit}
+        >
+          <Image
+            source={getPackArt(pack.id)}
+            style={styles.packArt}
+            resizeMode="cover"
+          />
+
+          <View style={styles.pricePill} pointerEvents="none">
+            {pack.price === 0 ? (
+              <Text style={styles.priceText}>FREE</Text>
+            ) : (
+              <View style={styles.priceRow}>
+                <Text style={styles.priceText}>{pack.price}</Text>
+                <CoinIcon size={16} />
+              </View>
+            )}
+          </View>
+
+          <View style={styles.countBadge} pointerEvents="none">
+            <Text style={styles.countText}>{pack.cardsCount} карт</Text>
+          </View>
+        </Pressable>
+
+        <Pressable
+          onPress={() => onInfoPress?.(pack)}
+          hitSlop={8}
+          style={styles.infoBtn}
+          accessibilityRole="button"
+          accessibilityLabel={`Информация: ${pack.name}`}
+        >
+          <Text style={styles.infoBtnText}>i</Text>
+        </Pressable>
       </View>
-      
-      <View style={styles.content}>
-        <Text style={styles.name}>{pack.name}</Text>
-        <Text style={styles.description}>{pack.description}</Text>
-        
-        <View style={styles.statsContainer}>
-          <View style={styles.statItem}>
-            <Text style={styles.statLabel}>Карт</Text>
-            <Text style={styles.statValue}>{pack.cardsCount}</Text>
-          </View>
-          
-          <View style={styles.statItem}>
-            <Text style={styles.statLabel}>Шанс легендарной</Text>
-            <Text style={styles.statValue}>
-              {pack.rarityWeights.legendary || 0}%
-            </Text>
-          </View>
-        </View>
-        
-        {pack.guaranteedLegendary && (
-          <View style={styles.guaranteeContainer}>
-            <Text style={styles.guaranteeText}>✓ Гарантированная легендарная карта</Text>
-          </View>
-        )}
-        
-        {pack.guaranteedEpic && !pack.guaranteedLegendary && (
-          <View style={styles.guaranteeContainer}>
-            <Text style={styles.guaranteeText}>✓ Гарантированная эпическая карта</Text>
-          </View>
-        )}
-        
-        {pack.guaranteedRare && !pack.guaranteedEpic && (
-          <View style={styles.guaranteeContainer}>
-            <Text style={styles.guaranteeText}>✓ Гарантированная редкая карта</Text>
-          </View>
-        )}
-      </View>
-      
-      <View style={styles.footer}>
-        <Text style={styles.buyText}>КУПИТЬ</Text>
-      </View>
-    </TouchableOpacity>
+    </Animated.View>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
+  stackItem: {
+    width: 132,
+  },
+  disabled: {
+    opacity: 0.45,
+  },
+  packFrame: {
+    width: 132,
+    height: 176,
+    borderRadius: 20,
     borderWidth: 3,
-    borderRadius: 15,
-    margin: 10,
     overflow: 'hidden',
-    backgroundColor: 'white',
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-    elevation: 5,
+    backgroundColor: BubbleTheme.card,
+    position: 'relative',
   },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    backgroundColor: '#f8f8f8',
-    padding: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: '#eee',
-  },
-  rarity: {
-    fontSize: 14,
-    fontWeight: 'bold',
-    textTransform: 'uppercase',
-  },
-  price: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#FFD700',
-  },
-  content: {
-    padding: 15,
-  },
-  name: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginBottom: 5,
-    color: '#333',
-  },
-  description: {
-    fontSize: 14,
-    color: '#666',
-    marginBottom: 15,
-    lineHeight: 20,
-  },
-  statsContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 15,
-  },
-  statItem: {
-    alignItems: 'center',
+  packHit: {
     flex: 1,
   },
-  statLabel: {
-    fontSize: 12,
-    color: '#888',
-    marginBottom: 3,
+  packArt: {
+    width: '100%',
+    height: '100%',
   },
-  statValue: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#333',
-  },
-  guaranteeContainer: {
-    backgroundColor: '#f0f8ff',
-    padding: 10,
-    borderRadius: 8,
-    marginBottom: 10,
-    borderWidth: 1,
-    borderColor: '#add8e6',
-  },
-  guaranteeText: {
-    fontSize: 12,
-    color: '#006400',
-    fontWeight: 'bold',
-    textAlign: 'center',
-  },
-  footer: {
-    backgroundColor: '#f8f8f8',
-    padding: 15,
+  pricePill: {
+    position: 'absolute',
+    top: 8,
+    left: 8,
+    minHeight: 28,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+    backgroundColor: BubbleTheme.coinBg,
     alignItems: 'center',
-    borderTopWidth: 1,
-    borderTopColor: '#eee',
+    justifyContent: 'center',
   },
-  buyText: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#fff',
-    backgroundColor: '#0066cc',
-    paddingHorizontal: 20,
-    paddingVertical: 8,
-    borderRadius: 20,
+  priceRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  priceText: {
+    color: BubbleTheme.coin,
+    fontSize: 13,
+    fontWeight: '900',
+  },
+  countBadge: {
+    position: 'absolute',
+    bottom: 10,
+    left: 8,
+    right: 8,
+    paddingVertical: 5,
+    borderRadius: 10,
+    backgroundColor: 'rgba(42, 33, 80, 0.72)',
+    alignItems: 'center',
+  },
+  countText: {
+    color: '#FFFFFF',
+    fontSize: 12,
+    fontWeight: '800',
+  },
+  infoBtn: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: 'rgba(255, 247, 251, 0.95)',
+    borderWidth: 2,
+    borderColor: BubbleTheme.line,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  infoBtnText: {
+    fontSize: 14,
+    fontWeight: '900',
+    color: BubbleTheme.text,
+    fontStyle: 'italic',
   },
 });
 

@@ -1,181 +1,173 @@
-// Компонент для отображения статистики коллекции
+// Compact collection stats — Bubble
 
 import React from 'react';
-import { View, Text, StyleSheet, Dimensions } from 'react-native';
+import { View, Text, StyleSheet } from 'react-native';
+import { BubbleTheme, RARITY_LABELS } from '../theme/bubble';
 
-const { width } = Dimensions.get('window');
+const RARITY_ORDER = ['common', 'rare', 'epic', 'legendary'];
+const POSITION_ORDER = [
+  { key: 'attacker', label: 'АТ' },
+  { key: 'midfielder', label: 'ПЗ' },
+  { key: 'defender', label: 'ЗЩ' },
+  { key: 'goalkeeper', label: 'ВР' },
+];
 
 const CollectionStats = ({ stats, completion }) => {
-  // Определение цветов для разных уровней редкости
-  const getRarityColor = (rarity) => {
-    switch (rarity) {
-      case 'legendary':
-        return '#FFD700'; // Золотой
-      case 'epic':
-        return '#8A2BE2'; // Фиолетовый
-      case 'rare':
-        return '#1E90FF'; // Синий
-      case 'common':
-      default:
-        return '#888888'; // Серый
-    }
-  };
-
-  // Определение цвета для прогресс-бара
-  const getProgressColor = (percentage) => {
-    if (percentage >= 75) return '#4CAF50'; // Зеленый
-    if (percentage >= 50) return '#8BC34A'; // Светло-зеленый
-    if (percentage >= 25) return '#FFC107'; // Оранжевый
-    return '#F44336'; // Красный
-  };
+  const rarityStats = stats?.statsByRarity?.stats || stats?.stats || {};
+  const positionStats = stats?.statsByPosition?.stats || null;
+  const collected = completion?.collectedCards || 0;
+  const total = completion?.totalCards || 0;
+  const percent = Math.min(100, Math.max(0, Number(completion?.completionPercentage) || 0));
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Статистика коллекции</Text>
-      
-      {/* Прогресс заполнения коллекции */}
-      <View style={styles.progressContainer}>
-        <Text style={styles.progressText}>
-          Заполнено: {completion?.completionPercentage || 0}%
+      <View style={styles.progressHeader}>
+        <Text style={styles.progressTitle}>Альбом</Text>
+        <Text style={styles.progressCount}>
+          {collected} / {total}
         </Text>
-        <View style={styles.progressBarBackground}>
-          <View 
-            style={[
-              styles.progressBar, 
-              { 
-                width: `${completion?.completionPercentage || 0}%`,
-                backgroundColor: getProgressColor(completion?.completionPercentage || 0)
-              }
-            ]} 
-          />
-        </View>
-        <Text style={styles.totalCardsText}>
-          {completion?.collectedCards || 0} из {completion?.totalCards || 0} карт
-        </Text>
+        <Text style={styles.progressPercent}>{percent}%</Text>
       </View>
-      
-      {/* Статистика по редкости */}
-      <View style={styles.statsContainer}>
-        <Text style={styles.sectionTitle}>Карты по редкости</Text>
-        <View style={styles.statsRow}>
-          {Object.entries(stats?.stats || {}).map(([rarity, count]) => (
-            <View key={rarity} style={styles.statItem}>
-              <View style={[styles.colorIndicator, { backgroundColor: getRarityColor(rarity) }]} />
-              <Text style={styles.statLabel}>
-                {rarity === 'legendary' ? 'Легендарные' : 
-                 rarity === 'epic' ? 'Эпические' : 
-                 rarity === 'rare' ? 'Редкие' : 'Обычные'}
+      <View style={styles.track}>
+        <View style={[styles.fill, { width: `${percent}%` }]} />
+      </View>
+
+      <View style={styles.chipRow}>
+        {RARITY_ORDER.map((key) => {
+          const colors = BubbleTheme.rarity[key];
+          const count = rarityStats[key] ?? 0;
+          return (
+            <View
+              key={key}
+              style={[
+                styles.chip,
+                { backgroundColor: colors.badge, borderColor: colors.border },
+              ]}
+            >
+              <Text style={[styles.chipLabel, { color: colors.badgeText }]}>
+                {RARITY_LABELS[key]}
               </Text>
-              <Text style={styles.statValue}>{count}</Text>
+              <Text style={[styles.chipValue, { color: colors.badgeText }]}>{count}</Text>
+            </View>
+          );
+        })}
+      </View>
+
+      {positionStats ? (
+        <View style={styles.posRow}>
+          {POSITION_ORDER.map(({ key, label }) => (
+            <View key={key} style={styles.posItem}>
+              <View style={styles.posCircle}>
+                <Text style={styles.posLabel}>{label}</Text>
+              </View>
+              <Text style={styles.posValue}>{positionStats[key] ?? 0}</Text>
             </View>
           ))}
         </View>
-      </View>
-      
-      {/* Баланс игрока */}
-      <View style={styles.balanceContainer}>
-        <Text style={styles.balanceText}>
-          Баланс: {stats?.playerCurrency?.currency || 0} монет
-        </Text>
-      </View>
+      ) : null}
     </View>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: 'white',
-    borderRadius: 15,
-    padding: 20,
-    margin: 10,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-    elevation: 5,
+    backgroundColor: BubbleTheme.card,
+    borderRadius: BubbleTheme.radius,
+    padding: 14,
+    marginHorizontal: 12,
+    marginTop: 12,
+    marginBottom: 8,
+    borderWidth: 1,
+    borderColor: BubbleTheme.line,
   },
-  title: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    marginBottom: 20,
-    textAlign: 'center',
-    color: '#333',
-  },
-  progressContainer: {
-    marginBottom: 20,
-  },
-  progressText: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    marginBottom: 10,
-    textAlign: 'center',
-    color: '#333',
-  },
-  progressBarBackground: {
-    height: 20,
-    backgroundColor: '#f0f0f0',
-    borderRadius: 10,
-    overflow: 'hidden',
-  },
-  progressBar: {
-    height: '100%',
-    borderRadius: 10,
-  },
-  totalCardsText: {
-    fontSize: 14,
-    color: '#666',
-    marginTop: 5,
-    textAlign: 'center',
-  },
-  statsContainer: {
-    marginBottom: 20,
-  },
-  sectionTitle: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    marginBottom: 10,
-    color: '#333',
-  },
-  statsRow: {
+  progressHeader: {
     flexDirection: 'row',
-    justifyContent: 'space-around',
-    flexWrap: 'wrap',
-  },
-  statItem: {
     alignItems: 'center',
-    marginBottom: 10,
-    width: '45%',
+    marginBottom: 8,
   },
-  colorIndicator: {
-    width: 12,
-    height: 12,
+  progressTitle: {
+    fontSize: 15,
+    fontWeight: '800',
+    color: BubbleTheme.text,
+  },
+  progressCount: {
+    marginLeft: 8,
+    fontSize: 13,
+    fontWeight: '600',
+    color: BubbleTheme.muted,
+    flex: 1,
+  },
+  progressPercent: {
+    fontSize: 13,
+    fontWeight: '800',
+    color: BubbleTheme.text,
+  },
+  track: {
+    height: 10,
     borderRadius: 6,
-    marginBottom: 5,
+    backgroundColor: BubbleTheme.track,
+    overflow: 'hidden',
+    marginBottom: 12,
   },
-  statLabel: {
+  fill: {
+    height: '100%',
+    backgroundColor: BubbleTheme.barFill,
+    borderRadius: 6,
+  },
+  chipRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  chip: {
+    minHeight: 44,
+    minWidth: '46%',
+    flexGrow: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 12,
+    borderRadius: 999,
+    borderWidth: 2,
+  },
+  chipLabel: {
+    fontSize: 11,
+    fontWeight: '900',
+    letterSpacing: 0.3,
+  },
+  chipValue: {
+    fontSize: 15,
+    fontWeight: '800',
+  },
+  posRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 12,
+  },
+  posItem: {
+    alignItems: 'center',
+    flex: 1,
+  },
+  posCircle: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: BubbleTheme.track,
+    borderWidth: 2,
+    borderColor: BubbleTheme.line,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  posLabel: {
     fontSize: 12,
-    color: '#666',
-    textAlign: 'center',
+    fontWeight: '800',
+    color: BubbleTheme.text,
   },
-  statValue: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#333',
-    marginTop: 2,
-  },
-  balanceContainer: {
-    borderTopWidth: 1,
-    borderTopColor: '#eee',
-    paddingTop: 15,
-  },
-  balanceText: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#FFD700',
-    textAlign: 'center',
+  posValue: {
+    marginTop: 4,
+    fontSize: 13,
+    fontWeight: '700',
+    color: BubbleTheme.muted,
   },
 });
 

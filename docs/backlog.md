@@ -9,27 +9,9 @@ _(пусто)_
 
 ## Ready
 
-Приоритет: **CF-103** (энергия) → **CF-104** → **CF-106**. UI: PackCard/MatchScreen под Bubble (хвост CF-110/107).
-
-### CF-103: Энергия и действия
-**Цель:** ввести лимит действий (матч, открытие пака) до серверной экономики.  
-**AC:**
-1) `docs/mechanics/energy.md`: максимум, стоимость матча, стоимость открытия пака, одно правило восстановления
-2) новый модуль `game_logic/energy.js`: списание не уходит ниже 0 и отклоняет действие при нехватке
-3) в том же spec три сценария given/when/then для QA
-**Исполнитель:** @agent-gdd  
-**Зависимости:** нет  
-**Вне скоупа:** UI счётчика, IAP, серверное хранение энергии; не править `upgradeCard` в этой задаче  
-**ROADMAP:** Фаза 2, система энергии/действий
+Приоритет: **CF-104** → **CF-106**. UI energy counter — после shared/API (Icebox).
 
 ## Ожидает зависимости
-
-### CF-110b: PackCard + MatchScreen → Bubble
-**Цель:** добить хвост CF-110/107 — PackCard и MatchScreen ещё на legacy blue.
-**AC:** по `docs/design/packs.md` (Bubble redesign) и `docs/design/match.md`
-**Исполнитель:** @agent-frontend-rn
-**Зависимости:** CF-107 specs; packs design обновлён (CF-110b-design)
-**ROADMAP:** Фаза 3
 
 ### CF-104: Схема и мотивация в матче
 **Цель:** тактическая схема и карта тренера меняют розыгрыш, не ломая лимит 5 атак / 5 защит.  
@@ -79,6 +61,12 @@ _(пусто)_
 
 ### CF-107: UX states (specs)
 **Lead:** `docs/design/collection.md`, `packs.md`, `match.md`. Реализация Pack/Match → CF-110b; Collection частично в CF-110.
+
+### CF-110b: Packs shop + Match Bubble
+**UX design + Frontend:** витрина паков (тиры, арт, CoinIcon), CollectionStats чипы, MatchScreen на Bubble. Dev-only выбор монетки.
+
+### CF-103: Энергия
+**Lead:** `docs/mechanics/energy.md`, `game_logic/energy.js` + тесты. UI счётчика — позже.
 
 ### CF-001 / CF-001b: Match engine + таймы
 **QA + GDD:** 26 тестов, `docs/mechanics/match-halves.md`, `docs/qa/cf-001-match-engine.md`.
