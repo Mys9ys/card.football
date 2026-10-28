@@ -9,21 +9,9 @@ _(пусто)_
 
 ## Ready
 
-Приоритет: **CF-106**. UI energy counter — после shared/API (Icebox).
+Приоритет: **CF-108**. UI energy / кубок / апгрейд в mobile — после shared/API (Icebox).
 
 ## Ожидает зависимости
-
-### CF-106: Офлайн-кубок на 8 команд
-**Цель:** один локальный кубок вместо моков на `TournamentScreen` — логика в каноне, без сервера.  
-**AC:**
-1) `docs/mechanics/offline-cup.md`: сетка на 8 команд, олимпийская система, каждый матч через `match_engine`
-2) модуль в `game_logic/`: старт кубка, победитель матча проходит дальше, приз победителю — валюта (число в spec)
-3) в кубок не попадает состав, который отклоняет валидатор CF-105
-4) сценарии given/when/then: победа в финале, поражение в первом раунде
-**Исполнитель:** @agent-gdd → @agent-qa  
-**Зависимости:** CF-001, CF-104, CF-105  
-**Вне скоупа:** лиги, рейтинг, друзья, серверная регистрация; подключение `TournamentScreen` — Icebox до shared-модуля  
-**ROADMAP:** Фаза 2, система турниров (только офлайн-кубок)
 
 ### CF-108: Строки интерфейса RU
 **Цель:** собрать подписи существующих экранов в одном файле копирайта.  
@@ -52,6 +40,9 @@ _(пусто)_
 
 ### CF-110b: Packs shop + Match Bubble
 **UX design + Frontend:** витрина паков (тиры, арт, CoinIcon), CollectionStats чипы, MatchScreen на Bubble. Dev-only выбор монетки.
+
+### CF-106: Офлайн-кубок на 8 команд
+**GDD + QA (Lead):** `docs/mechanics/offline-cup.md`, `offline_cup.js` + тесты; приз 500; валидация CF-105. UI Tournament — Icebox.
 
 ### CF-104: Схема и мотивация в матче
 **GDD + QA (Lead):** `docs/mechanics/match-modifiers.md`, `match_modifiers.js` + тесты; схемы и COACH_CARDS `one_play` в `match_engine`.
