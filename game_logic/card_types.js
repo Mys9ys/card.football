@@ -176,14 +176,14 @@ const CARD_TYPES = {
     }
   },
 
-  // Карты мотивации тренера
+  // Карты мотивации тренера (эффект — один розыгрыш, см. match-modifiers.md)
   COACH_CARDS: {
     SUPPORT: {
       id: 'support',
       name: 'Поддержка',
       description: 'Тренер подбадривает команду, повышая мораль',
       effect: 'increase_morale',
-      duration: 'temporary',
+      duration: 'one_play',
       power: 5
     },
     REPRIMAND: {
@@ -191,7 +191,7 @@ const CARD_TYPES = {
       name: 'Выговор',
       description: 'Тренер делает выговор игрокам, повышая концентрацию',
       effect: 'increase_concentration',
-      duration: 'temporary',
+      duration: 'one_play',
       power: 6
     },
     INSPIRING_SPEECH: {
@@ -199,7 +199,7 @@ const CARD_TYPES = {
       name: 'Вдохновляющая речь',
       description: 'Тренер произносит вдохновляющую речь, заряжая команду',
       effect: 'boost_performance',
-      duration: 'half_match',
+      duration: 'one_play',
       power: 8
     },
     TACTICAL_SUBSTITUTION: {
@@ -207,7 +207,7 @@ const CARD_TYPES = {
       name: 'Тактическая замена',
       description: 'Тренер делает стратегическую замену для изменения хода матча',
       effect: 'change_momentum',
-      duration: 'permanent',
+      duration: 'one_play',
       power: 7
     }
   }

@@ -1,5 +1,7 @@
 // Движок матча для игры "Карточный футбол"
 
+const { applyPlayModifiers } = require('./match_modifiers');
+
 class MatchEngine {
   constructor() {
     this.teams = {};
@@ -50,9 +52,10 @@ class MatchEngine {
   }
 
   /**
-   * Выполнение атаки одной команды против защиты другой
+   * Выполнение атаки одной команды против защиты другой.
+   * options.attackMotivation / options.defenseMotivation — id карты тренера на этот розыгрыш.
    */
-  executeAttack(attackingTeamId, defendingTeamId, attackCards, defenseCards) {
+  executeAttack(attackingTeamId, defendingTeamId, attackCards, defenseCards, options = {}) {
     // Проверяем состояние матча
     if (this.matchState !== 'first_half' && this.matchState !== 'second_half') {
       return {
@@ -80,13 +83,28 @@ class MatchEngine {
       };
     }
 
+    const attackMods = applyPlayModifiers({
+      formationId: attackingTeam.formation,
+      motivationId: options.attackMotivation,
+      role: 'attacking',
+    });
+    const defenseMods = applyPlayModifiers({
+      formationId: defendingTeam.formation,
+      motivationId: options.defenseMotivation,
+      role: 'defending',
+    });
+
     // Рассчитываем силу атаки
-    const attackPower = this.calculateAttackPower(attackingTeam, attackCards);
+    const attackPower = this.calculateAttackPower(attackingTeam, attackCards, attackMods.attack);
     // Рассчитываем силу защиты
-    const defensePower = this.calculateDefensePower(defendingTeam, defenseCards);
+    const defensePower = this.calculateDefensePower(defendingTeam, defenseCards, defenseMods.defense);
 
     // Определяем результат взаимодействия
     const result = this.resolveAttack(attackPower, defensePower, attackingTeam, defendingTeam);
+    result.modifiers = {
+      attack: attackMods,
+      defense: defenseMods,
+    };
 
     // Списание относится к текущему тайму и не отменяется сменой тайма.
     attackingTeam.attacksLeft--;
@@ -166,9 +184,9 @@ class MatchEngine {
   }
 
   /**
-   * Рассчет силы атаки
+   * Рассчет силы атаки (+ аддитивный модификатор схемы/мотивации)
    */
-  calculateAttackPower(team, attackCards) {
+  calculateAttackPower(team, attackCards, playBonus = 0) {
     // Базовая сила атаки команды
     let baseAttackPower = team.players
       .filter(player => ['attacker', 'midfielder'].includes(player.position))
@@ -187,15 +205,16 @@ class MatchEngine {
     const totalAttackPower = baseAttackPower + 
       attackModifiers.power * 0.3 + 
       attackModifiers.speed * 0.4 + 
-      attackModifiers.technique * 0.3;
+      attackModifiers.technique * 0.3 +
+      playBonus;
 
     return Math.round(totalAttackPower);
   }
 
   /**
-   * Рассчет силы защиты
+   * Рассчет силы защиты (+ аддитивный модификатор схемы/мотивации)
    */
-  calculateDefensePower(team, defenseCards) {
+  calculateDefensePower(team, defenseCards, playBonus = 0) {
     // Базовая сила защиты команды
     let baseDefensePower = team.players
       .filter(player => ['defender', 'midfielder', 'goalkeeper'].includes(player.position))
@@ -214,7 +233,8 @@ class MatchEngine {
     const totalDefensePower = baseDefensePower + 
       defenseModifiers.power * 0.4 + 
       defenseModifiers.speed * 0.3 + 
-      defenseModifiers.technique * 0.3;
+      defenseModifiers.technique * 0.3 +
+      playBonus;
 
     return Math.round(totalDefensePower);
   }
